@@ -540,6 +540,16 @@ class MT5Interface:
             return False
 
     def modify_sl(self, ticket, new_sl):
+        try:
+            pos = mt5.positions_get(ticket=ticket)
+            if pos:
+                m = int(getattr(pos[0], "magic", 0) or 0)
+                from smc_recovery import ALL_ENGINE_MAGICS
+                if m not in ALL_ENGINE_MAGICS:
+                    return False
+        except Exception:
+            pass
+
         """Modifies Stop Loss of an existing open position"""
         position = mt5.positions_get(ticket=ticket)
         if not position:
@@ -566,6 +576,16 @@ class MT5Interface:
             return False
 
     def modify_tp(self, ticket, new_tp):
+        try:
+            pos = mt5.positions_get(ticket=ticket)
+            if pos:
+                m = int(getattr(pos[0], "magic", 0) or 0)
+                from smc_recovery import ALL_ENGINE_MAGICS
+                if m not in ALL_ENGINE_MAGICS:
+                    return False
+        except Exception:
+            pass
+
         """Modifies Take Profit (TP) of an existing open position (0 clears TP)."""
         position = mt5.positions_get(ticket=ticket)
         if not position:
