@@ -974,7 +974,7 @@ def set_pair():
         return jsonify({"success": True, "symbol": data["symbol"]})
     return jsonify({"success": False}), 400
 
-def kill_process_on_port(port=8000):
+def kill_process_on_port(port=8020):
     try:
         import os
         import subprocess
@@ -1000,10 +1000,10 @@ def run_web_server():
     time.sleep(0.5)
     try:
         logging.getLogger('werkzeug').setLevel(logging.ERROR)
-        add_log("🌐 Web Dashboard running on http://127.0.0.1:8000")
-        app.run(host='0.0.0.0', port=8000, debug=False, use_reloader=False)
+        add_log("🌐 Web Dashboard running on http://127.0.0.1:8020")
+        app.run(host='0.0.0.0', port=8020, debug=False, use_reloader=False)
     except Exception as e:
-        add_log(f"Port 8000 error: {e}")
+        add_log(f"Port 8020 error: {e}")
 
 
 
@@ -2249,7 +2249,7 @@ if __name__ == "__main__":
     def _open_dashboard_browser():
         time.sleep(2.5)
         try:
-            webbrowser.open("http://127.0.0.1:8000")
+            webbrowser.open("http://127.0.0.1:8020")
         except Exception:
             pass
 
