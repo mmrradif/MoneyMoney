@@ -861,7 +861,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
     bot_state["_smc_lvls"] = lvls
     st["buy_zone"] = lvls["res_zone"]
     st["sell_zone"] = lvls["sup_zone"]
-    m1_atr = float(lvls["m1_atr"])
+    m1_atr = float(lvls.get("m1_atr", lvls.get("h1_atr", 1.0)))
     min_profit_close = max(0.5, float(getattr(config, "SMC_MIN_CLOSE_PROFIT_USD", 1.0)))
 
     # ── Approach gate on pending stops (Step 1 flat) ──

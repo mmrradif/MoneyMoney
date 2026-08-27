@@ -870,6 +870,7 @@ class Strategy:
             "sup_zone": (round(sup_zone_low, digits), round(sup_zone_high, digits)),
             "buffer": float(buf),
             "h1_atr": float(atr),
+            "m1_atr": float(atr),
             "valid_high": float(vh),
             "valid_low": float(vl),
         }
