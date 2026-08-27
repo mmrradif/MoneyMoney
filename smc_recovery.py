@@ -134,7 +134,9 @@ def _xau_stops(orders, buy=True):
             continue
         if "XAU" not in str(getattr(o, "symbol", "")).upper():
             continue
-        out.append(o)
+        mag = int(getattr(o, "magic", 0) or 0)
+        if mag in ALL_ENGINE_MAGICS:
+            out.append(o)
     return out
 
 

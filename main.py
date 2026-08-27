@@ -2033,7 +2033,7 @@ def bot_loop():
                         if pend_mode_cfg in ('PMAX_RECOVERY', 'SMC_PMAX_RECOVERY'):
                             # 3-step no-loss: H1 valid stops outside zone + M5 PMAX/HalfTrend gates
                             smc_recovery.manage_smc_pmax_recovery(
-                                mt5_client, bot_state, h1_df, m5_df,
+                                mt5_client, bot_state, m1_df, m5_df,
                                 float(curr_ask), float(curr_bid), add_log,
                                 target_lot=target_lot,
                             )
