@@ -183,7 +183,7 @@ class MT5Interface:
                 
             # Attempt to select symbol variants (BTCUSD, BTCUSDm, XAUUSD, XAUUSDm)
             matched_sym = symbol
-            for s_variant in [symbol, symbol + 'm', symbol + 'c', symbol + 'k']:
+            for s_variant in [symbol, 'XAUUSDm', 'XAUUSD', symbol + 'm', symbol + 'c']:
                 if mt5.symbol_select(s_variant, True):
                     matched_sym = s_variant
                     break

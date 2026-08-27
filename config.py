@@ -15,7 +15,7 @@ setup_daily_logger()
 
 
 # Trading Parameters
-SYMBOL = "XAUUSD"
+SYMBOL = "XAUUSDm"
 MAGIC_NUMBER = 100999             # Unique Expert Advisor Magic ID for MT5 Order Tracking
 
 # Dynamic Capital Preservation & Trade Parameters
