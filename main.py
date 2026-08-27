@@ -1054,7 +1054,8 @@ def ensure_tp3_reverse_stop(mt5_client, pos, digits):
                     add_log(f"🔗 TP3 reverse synced #{o.ticket}: entry={rev_price:.2f} SL={rev_sl:.2f} (with pos SL)")
             keep = o
         else:
-            mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+            if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
 
     if keep is not None:
         return True
@@ -1154,17 +1155,20 @@ def manage_tp3_runners(mt5_client, h1_rates=None, m5_rates=None):
                 rev_magic = MAGIC_REV_SELL if is_buy else MAGIC_REV_BUY
                 for o in (mt5.orders_get(symbol=pos.symbol) or []):
                     if int(getattr(o, 'magic', 0) or 0) == rev_magic:
-                        mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+                        if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                            mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
                         add_log(f"🧹 Removed TP3 reverse #{o.ticket} after reversal close")
 
     # Orphan reverse stops if no matching TP3 runner
     for o in (mt5.orders_get() or []):
         mag = int(getattr(o, 'magic', 0) or 0)
         if mag == MAGIC_REV_SELL and not has_buy_tp3:
-            mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+            if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
             add_log(f"🧹 Orphan TP3 reverse SELL_STOP #{o.ticket} removed")
         elif mag == MAGIC_REV_BUY and not has_sell_tp3:
-            mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+            if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
             add_log(f"🧹 Orphan TP3 reverse BUY_STOP #{o.ticket} removed")
 
     # Drop virtual targets for closed tickets
@@ -1232,7 +1236,8 @@ def manage_open_positions(mt5_client, h1_rates=None, m15_rates=None, m5_rates=No
             # Cancel all active pending orders on account
             p_orders = mt5.orders_get() or []
             for po in p_orders:
-                mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": po.ticket})
+                if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                    mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": po.ticket})
                 add_log(f"🧹 PURGED PENDING ORDER #{po.ticket} on Profit Cap Hit!")
             return
 
@@ -1266,7 +1271,8 @@ def manage_open_positions(mt5_client, h1_rates=None, m15_rates=None, m5_rates=No
             # Cancel all active pending orders on account
             p_orders = mt5.orders_get() or []
             for po in p_orders:
-                mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": po.ticket})
+                if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                    mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": po.ticket})
                 add_log(f"🧹 PURGED PENDING ORDER #{po.ticket} on Loss Cap Shield Hit!")
             return
 
@@ -1894,29 +1900,7 @@ def bot_loop():
                             None,
                         )
 
-                        # MANUAL ONLY: if SL/TP missing, set once. Never cancel stops / hedge / recover from these.
-                        smc_mode = getattr(config, 'PENDING_MODE', '').upper() in ('PMAX_RECOVERY', 'SMC_PMAX_RECOVERY')
-                        for p in open_positions:
-                            mag = int(getattr(p, 'magic', 0) or 0)
-                            if (smc_mode and mag in smc_recovery.ALL_ENGINE_MAGICS) :
-                                continue
-                            # Only touch true manual tickets for auto SL/TP fill
-                            if not smc_recovery.is_manual_magic(mag) and mag != 0:
-                                continue
-                            is_tp3_p = (p.ticket in tp3_tickets) or (mag in TP3_MAGICS)
-                            p_sl = float(p.sl or 0)
-                            p_tp = float(p.tp or 0)
-                            if p_sl <= 0 or (p_tp <= 0 and not is_tp3_p):
-                                side = 'BUY' if p.type == mt5.POSITION_TYPE_BUY else 'SELL'
-                                entry_p = float(p.price_open)
-                                calc_sl, calc_tp = Strategy.calculate_manual_smc_sl_tp(h1_df, m5_df, side, entry_p)
-                                target_sl = round(calc_sl, digits) if p_sl <= 0 else p_sl
-                                target_tp = round(calc_tp, digits) if (p_tp <= 0 and not is_tp3_p) else p_tp
-                                res_sl_man = mt5_client.modify_sl(p.ticket, target_sl) if p_sl <= 0 else True
-                                res_tp_man = mt5_client.modify_tp(p.ticket, target_tp) if (p_tp <= 0 and not is_tp3_p) else True
-                                if res_sl_man or res_tp_man:
-                                    add_log(f"🛡️ MANUAL SL/TP ONLY: #{p.ticket} ({side}) SL=${target_sl:.2f} TP=${target_tp:.2f} (isolated)")
-
+                        # MANUAL SL/TP AUTO-FILL REMOVED STRICTLY
                         # Daily drawdown — bot positions only; never force-close isolated manual
                         acc_info = mt5.account_info()
                         curr_balance = acc_info.balance if acc_info else 1000.0
@@ -1931,7 +1915,8 @@ def bot_loop():
                                 add_log(f"🚨 EMERGENCY EXIT: Closed bot position #{p_close.ticket} due to Daily Drawdown Limit.")
                             for o in orders:
                                 if o.type in [mt5.ORDER_TYPE_BUY_STOP, mt5.ORDER_TYPE_SELL_STOP, mt5.ORDER_TYPE_BUY_LIMIT, mt5.ORDER_TYPE_SELL_LIMIT]:
-                                    mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+                                    if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                                        mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
                             add_log("🚨 EMERGENCY ACCOUNT SAFETY CIRCUIT BREAKER ACTIVATED: BOT TRADES CLOSED & BOT DISABLED FOR THE DAY (manual kept)!")
 
                         # Check 9-Loss Pending Circuit Breaker Status
@@ -1941,7 +1926,8 @@ def bot_loop():
                         if circuit_breaker_active:
                             for o in orders:
                                 if o.type in [mt5.ORDER_TYPE_BUY_STOP, mt5.ORDER_TYPE_SELL_STOP, mt5.ORDER_TYPE_BUY_LIMIT, mt5.ORDER_TYPE_SELL_LIMIT]:
-                                    mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+                                    if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                                        mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
                             add_log(f"⚠️ DAILY CIRCUIT BREAKER ACTIVE: 9 consecutive losses reached today! Pending Orders suspended.")
 
                         else:
@@ -1993,7 +1979,8 @@ def bot_loop():
                             for o in orders:
                                 mag = int(getattr(o, 'magic', 0) or 0)
                                 if 'XAU' in str(getattr(o, 'symbol', '')).upper() and mag not in keep_magics:
-                                    mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+                                    if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                                        mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
 
                         LIMIT_BUY_MAGICS = (MAGIC_MAIN_BUY, MAGIC_TP2_BUY, MAGIC_TP3_BUY)
                         LIMIT_SELL_MAGICS = (MAGIC_MAIN_SELL, MAGIC_TP2_SELL, MAGIC_TP3_SELL)
@@ -2061,7 +2048,8 @@ def bot_loop():
                                 # Remove any lingering limit orders
                                 for o in orders:
                                     if o.type in (mt5.ORDER_TYPE_BUY_LIMIT, mt5.ORDER_TYPE_SELL_LIMIT):
-                                        mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+                                        if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                                            mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
 
                                 v_lvls = Strategy.get_validated_breakout_levels(h1_df, float(curr_ask), float(curr_bid))
                                 breakout_buy_trig = float(v_lvls["buy_stop"])
@@ -2096,7 +2084,8 @@ def bot_loop():
                             elif has_active_buy:
                                 for o in orders:
                                     if o.type in (mt5.ORDER_TYPE_BUY_STOP, mt5.ORDER_TYPE_SELL_LIMIT):
-                                        mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+                                        if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                                            mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
 
                                 h1_swing_low = float(last_h1['last_low']) if (last_h1 is not None and pd.notna(last_h1.get('last_low'))) else sell_trig
 
@@ -2146,7 +2135,8 @@ def bot_loop():
                             elif has_active_sell:
                                 for o in orders:
                                     if o.type in (mt5.ORDER_TYPE_SELL_STOP, mt5.ORDER_TYPE_BUY_LIMIT):
-                                        mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
+                                        if int(getattr(po if "po" in locals() else o, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS:
+                                            mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": o.ticket})
 
                                 h1_swing_high = float(last_h1['last_high']) if (last_h1 is not None and pd.notna(last_h1.get('last_high'))) else buy_trig
 
