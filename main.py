@@ -1106,7 +1106,7 @@ def manage_tp3_runners(mt5_client, h1_rates=None, m5_rates=None):
         digits = symbol_info.digits if symbol_info else 5
         curr_tp = float(pos.tp or 0)
 
-        h1_df_tp3 = Strategy.calculate_indicators(h1_rates) if (h1_rates is not None and len(h1_rates) > 0) else None
+        h1_df_tp3 = m1_df if (h1_rates is not None and len(h1_rates) > 0) else None
         last_h1 = h1_df_tp3.iloc[-1] if (h1_df_tp3 is not None and len(h1_df_tp3) > 0) else {}
 
         # STRICT H1 EARLY EXIT & TP MODIFY PROTECTION:
@@ -1336,7 +1336,7 @@ def manage_open_positions(mt5_client, h1_rates=None, m15_rates=None, m5_rates=No
             # TP3 runners: NEVER attach broker TP (close only on SL / reversal). Repair SL only.
             side_str = 'BUY' if pos_type == mt5.POSITION_TYPE_BUY else 'SELL'
             h1_rates_pos = mt5_client.fetch_rates(pos_symbol, mt5.TIMEFRAME_M1, num_bars=250)
-            h1_df_pos = Strategy.calculate_indicators(h1_rates_pos) if h1_rates_pos is not None else pos_df
+            h1_df_pos = m1_df if h1_rates_pos is not None else pos_df
             smc_sl_rep, smc_tp_rep, _, _ = Strategy.calculate_valid_zone_sl_tp(h1_df_pos, pos_df, side_str, entry_price)
 
             if is_tp3:
@@ -1699,8 +1699,8 @@ def bot_loop():
             if h1_rates is not None and m15_rates is not None and m5_rates is not None:
                 m1_df = Strategy.calculate_indicators(h1_rates)
                 h1_df = m1_df
-                m15_df = Strategy.calculate_indicators(m15_rates)
-                m5_df = Strategy.calculate_indicators(m5_rates)
+                m15_df = m1_df
+                m5_df = m1_df
 
                 last_h1 = h1_df.iloc[-1]
                 last_m15 = m15_df.iloc[-1]

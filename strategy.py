@@ -18,11 +18,11 @@ class Strategy:
         2. Average True Range (ATR) & Volatility Expansion Ratio
         3. Multi-timeframe trend Alignment Ratio (M1 + M15 + M5 Confluence)
         """
-        if m1_df is None or m15_df is None or m5_df is None or len(m5_df) == 0:
+        if m1_df is None or m1_df is None or m1_df is None or len(m1_df) == 0:
             return 2.0
 
-        last_m5 = m5_df.iloc[-1]
-        last_m15 = m15_df.iloc[-1]
+        last_m5 = m1_df.iloc[-1]
+        last_m15 = m1_df.iloc[-1]
         last_h1 = m1_df.iloc[-1]
 
         close_p = float(last_m5['close'])
@@ -69,7 +69,7 @@ class Strategy:
             return 0.0, 0.0
 
         last_h1 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else {}
-        last_m5 = m5_df.iloc[-1] if (m5_df is not None and len(m5_df) > 0) else last_h1
+        last_m5 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else last_h1
 
         def _f(row, key, default=0.0):
             try:
@@ -160,7 +160,7 @@ class Strategy:
         - TP AT valid opposite SMC / structure zones (not before zone)
         """
         entry_price = float(entry_price)
-        last_m5 = m5_df.iloc[-1] if (m5_df is not None and len(m5_df) > 0) else {}
+        last_m5 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else {}
         last_h1 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else last_m5
 
         def _f(row, key, default):
@@ -325,9 +325,9 @@ class Strategy:
 
         Band vs live price (gold): about $14–$38 each side.
         """
-        last_m5 = m5_df.iloc[-1] if (m5_df is not None and len(m5_df) > 0) else {}
+        last_m5 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else {}
         last_h1 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else last_m5
-        last_m15 = m15_df.iloc[-1] if (m15_df is not None and len(m15_df) > 0) else last_m5
+        last_m15 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else last_m5
 
         def _f(row, key, default):
             try:
@@ -367,8 +367,8 @@ class Strategy:
         mtf_res = _f(last_h1, 'mtf_res_zone', h1_high)
         mtf_sup = _f(last_h1, 'mtf_sup_zone', h1_low)
 
-        m5_hi, m5_lo = _tail_hl(m5_df, 40)
-        m15_hi, m15_lo = _tail_hl(m15_df, 20)
+        m5_hi, m5_lo = _tail_hl(m1_df, 40)
+        m15_hi, m15_lo = _tail_hl(m1_df, 20)
         h1_hi, h1_lo = _tail_hl(m1_df, 12)
         m5_rmax = _f(last_m5, 'range_max', m5_hi or curr_ask)
         m5_rmin = _f(last_m5, 'range_min', m5_lo or curr_bid)
@@ -445,7 +445,7 @@ class Strategy:
         - TP = AT valid SMC / structure zones (swing, OB, MTF, fib, gann, pivot)
         """
         entry_price = float(entry_price)
-        last_m5 = m5_df.iloc[-1] if (m5_df is not None and len(m5_df) > 0) else {}
+        last_m5 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else {}
         last_h1 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else last_m5
 
         def _f(row, key, default):
@@ -497,7 +497,7 @@ class Strategy:
             return SMC_PRIORITY.get(name, 20)
 
         if signal == 'BUY':
-            sl_price, _ = Strategy.calculate_manual_smc_sl_tp(m1_df, m5_df, 'BUY', entry_price)
+            sl_price, _ = Strategy.calculate_manual_smc_sl_tp(m1_df, m1_df, 'BUY', entry_price)
             zone_name = 'M1 Valid Swing Low (Unified Structure)'
             if opposite_entry is not None and float(opposite_entry) < entry_price:
                 sl_price = float(opposite_entry)
@@ -525,7 +525,7 @@ class Strategy:
                 ('Fib 1.618 Ext', _f(last_h1, 'fib_1618', 0)),
                 ('Fib 1000', _f(last_h1, 'fib_1000', 0)),
             ]
-            for lvl in _hist_levels([m1_df, m5_df], ['swing_high', 'mtf_res_zone', 'resistance', 'last_high']):
+            for lvl in _hist_levels([m1_df, m1_df], ['swing_high', 'mtf_res_zone', 'resistance', 'last_high']):
                 named.append(('Hist Supply', lvl))
 
             rmax = _f(last_m5, 'range_max', _f(last_h1, 'range_max', entry_price))
@@ -631,7 +631,7 @@ class Strategy:
             )
 
         else:  # SELL
-            sl_price, _ = Strategy.calculate_manual_smc_sl_tp(m1_df, m5_df, 'SELL', entry_price)
+            sl_price, _ = Strategy.calculate_manual_smc_sl_tp(m1_df, m1_df, 'SELL', entry_price)
             zone_name = 'M1 Valid Swing High (Unified Structure)'
             if opposite_entry is not None and float(opposite_entry) > entry_price:
                 sl_price = float(opposite_entry)
@@ -658,7 +658,7 @@ class Strategy:
                 ('Pivot S2', _f(last_m5, 'pivot_s2', 0)),
                 ('Fib 000', _f(last_h1, 'fib_000', 0)),
             ]
-            for lvl in _hist_levels([m1_df, m5_df], ['swing_low', 'mtf_sup_zone', 'support', 'last_low']):
+            for lvl in _hist_levels([m1_df, m1_df], ['swing_low', 'mtf_sup_zone', 'support', 'last_low']):
                 named.append(('Hist Demand', lvl))
 
             rmax = _f(last_m5, 'range_max', _f(last_h1, 'range_max', entry_price + h1_atr * 2))
@@ -876,7 +876,7 @@ class Strategy:
         }
 
     @staticmethod
-    def m5_pmax_halftrend_status(m5_df):
+    def m5_pmax_halftrend_status(m1_df):
         """M5 PMAX + HalfTrend (Mannu) live status for UI/gates."""
         out = {
             "pmax": "FLAT",
@@ -887,9 +887,9 @@ class Strategy:
             "halftrend_bullish": False,
             "halftrend_bearish": False,
         }
-        if m5_df is None or len(m5_df) == 0:
+        if m1_df is None or len(m1_df) == 0:
             return out
-        last = m5_df.iloc[-1]
+        last = m1_df.iloc[-1]
         pmax_b = bool(last.get('pmax_bullish', False)) if hasattr(last, 'get') else False
         pmax_s = bool(last.get('pmax_bearish', False)) if hasattr(last, 'get') else False
         ht_b = bool(last.get('mannu_matrix_bullish', False)) if hasattr(last, 'get') else False
@@ -934,20 +934,20 @@ class Strategy:
         return out
 
     @staticmethod
-    def trend_bias_pmax_halftrend(m5_df):
+    def trend_bias_pmax_halftrend(m1_df):
         """M5-only dual bias: BUY | SELL | MIXED."""
-        return Strategy.m5_pmax_halftrend_status(m5_df).get("dual", "MIXED")
+        return Strategy.m5_pmax_halftrend_status(m1_df).get("dual", "MIXED")
 
     @staticmethod
     def m5_hit_confirm_status(m1_df, m5_df):
         """C1 (PMAX) + C2 (HalfTrend) + C3 (Closed Candle) reading for UI and hit-check."""
-        out = dict(Strategy.m5_pmax_halftrend_status(m5_df))
+        out = dict(Strategy.m5_pmax_halftrend_status(m1_df))
         h1_closed = bool(getattr(config, "M1_CONFIRM_CLOSED", True))
         m5_closed = bool(getattr(config, "M5_CONFIRM_CLOSED", True))
         h1c = tf_latest_reading(m1_df, closed_only=h1_closed)
-        m5c = tf_latest_reading(m5_df, closed_only=m5_closed)
-        buy_g = h1_m5_pattern_gate(m1_df, m5_df, "BUY", h1_closed_only=h1_closed, m5_closed_only=m5_closed)
-        sell_g = h1_m5_pattern_gate(m1_df, m5_df, "SELL", h1_closed_only=h1_closed, m5_closed_only=m5_closed)
+        m5c = tf_latest_reading(m1_df, closed_only=m5_closed)
+        buy_g = h1_m5_pattern_gate(m1_df, m1_df, "BUY", h1_closed_only=h1_closed, m5_closed_only=m5_closed)
+        sell_g = h1_m5_pattern_gate(m1_df, m1_df, "SELL", h1_closed_only=h1_closed, m5_closed_only=m5_closed)
         candle = m5c.get("bias") or "NONE"
         out["candle"] = candle
         out["c3"] = candle
@@ -998,7 +998,7 @@ class Strategy:
           SELL: PMAX SELL AND HalfTrend SELL AND M5 bearish/continuation (M1 not bullish)
           Else → MODIFY farther outside zone so it cannot fill.
         """
-        st = Strategy.m5_pmax_halftrend_status(m5_df)
+        st = Strategy.m5_pmax_halftrend_status(m1_df)
         bias = st.get("dual", "MIXED")
         pmax = st.get("pmax") or "FLAT"
         ht = st.get("halftrend") or "FLAT"
@@ -1007,7 +1007,7 @@ class Strategy:
         atr = Strategy._smc_f(m1_df.iloc[-1] if len(m1_df) else {}, 'atr', 5.0)
         approach = max(atr * float(getattr(config, 'SMC_APPROACH_ATR_FRAC', 0.5)), float(broker_stops or 0), 1.0)
         dist = abs(float(price) - float(stop_price))
-        candle = h1_m5_pattern_gate(m1_df, m5_df, want)
+        candle = h1_m5_pattern_gate(m1_df, m1_df, want)
         extra = {
             "pmax": pmax,
             "halftrend": ht,
@@ -1420,13 +1420,13 @@ class Strategy:
         2. Lower Timeframe (M5): Order Block Sweep + Fair Value Gap (FVG) + Institutional Volume Spike.
         """
         m1_df = Strategy.calculate_indicators(m1_df)
-        m15_df = Strategy.calculate_indicators(m15_df)
-        m5_df = Strategy.calculate_indicators(m5_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
 
         last_h1 = m1_df.iloc[-1]
-        last_m15 = m15_df.iloc[-1]
-        last_m5 = m5_df.iloc[-1]
-        prev_m5 = m5_df.iloc[-2]
+        last_m15 = m1_df.iloc[-1]
+        last_m5 = m1_df.iloc[-1]
+        prev_m5 = m1_df.iloc[-2]
 
         h1_lh = last_h1['last_high'] if pd.notna(last_h1['last_high']) else last_h1['high']
         h1_ll = last_h1['last_low'] if pd.notna(last_h1['last_low']) else last_h1['low']
@@ -1546,12 +1546,12 @@ class Strategy:
         Human-readable SMC confirmation status showing exact missing rules and what bot is waiting for.
         """
         m1_df = Strategy.calculate_indicators(m1_df)
-        m15_df = Strategy.calculate_indicators(m15_df)
-        m5_df = Strategy.calculate_indicators(m5_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
 
         last_h1 = m1_df.iloc[-1]
-        last_m15 = m15_df.iloc[-1]
-        last_m5 = m5_df.iloc[-1]
+        last_m15 = m1_df.iloc[-1]
+        last_m5 = m1_df.iloc[-1]
 
         if bool(last_m5.get('is_consolidation', False)):
             adx_val = float(last_m5.get('adx', 0)) if pd.notna(last_m5.get('adx', 0)) else 0.0
@@ -1599,10 +1599,10 @@ class Strategy:
         Smart Money Concepts Forecast Detection.
         """
         m1_df = Strategy.calculate_indicators(m1_df)
-        m5_df = Strategy.calculate_indicators(m5_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
 
         last_h1 = m1_df.iloc[-1]
-        last_m5 = m5_df.iloc[-1]
+        last_m5 = m1_df.iloc[-1]
 
         h1_lh = last_h1['last_high'] if pd.notna(last_h1['last_high']) and last_h1['last_high'] is not None else last_h1['close']
         h1_ll = last_h1['last_low'] if pd.notna(last_h1['last_low']) and last_h1['last_low'] is not None else last_h1['close']
@@ -1624,12 +1624,12 @@ class Strategy:
         Calculates exact status for 8 Comprehensive SMC Strategy Rules (Matched / Pending).
         """
         m1_df = Strategy.calculate_indicators(m1_df)
-        m15_df = Strategy.calculate_indicators(m15_df)
-        m5_df = Strategy.calculate_indicators(m5_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
 
         last_h1 = m1_df.iloc[-1]
-        last_m15 = m15_df.iloc[-1]
-        last_m5 = m5_df.iloc[-1]
+        last_m15 = m1_df.iloc[-1]
+        last_m5 = m1_df.iloc[-1]
 
         h1_lh = last_h1['last_high'] if pd.notna(last_h1['last_high']) else last_h1['high']
         h1_ll = last_h1['last_low'] if pd.notna(last_h1['last_low']) else last_h1['low']

@@ -295,8 +295,8 @@ def _apply_hedge_zero_loss_exits(mt5_client, priors, reverses, add_log, m1_df=No
         # Set runner TP directly on M1 SMC zone boundary (far structural support/resistance)
         side = "SELL" if r.type == mt5.POSITION_TYPE_SELL else "BUY"
         zone_tp = None
-        if m1_df is not None and m5_df is not None:
-            _, _, tp2, tp3 = Strategy.calculate_pending_zone_sl_tp(m1_df, m5_df, side, float(r.price_open))
+        if m1_df is not None and m1_df is not None:
+            _, _, tp2, tp3 = Strategy.calculate_pending_zone_sl_tp(m1_df, m1_df, side, float(r.price_open))
             zone_tp = round(float(tp3 or tp2 or 0.0), dig)
             if side == "SELL" and zone_tp >= p:
                 zone_tp = round(p - 10.0, dig)
@@ -430,10 +430,10 @@ def _place_both_base_stops(mt5_client, m1_df, m5_df, buy_trig, sell_trig, st, lv
             break
     buy_trig, sell_trig = _ensure_stops_outside_zones(buy_trig, sell_trig, lvls, ask, bid, dig)
     _, b_tp1, b_tp2, b_tp3 = Strategy.calculate_pending_zone_sl_tp(
-        m1_df, m5_df, "BUY", buy_trig, opposite_entry=sell_trig
+        m1_df, m1_df, "BUY", buy_trig, opposite_entry=sell_trig
     )
     _, s_tp1, s_tp2, s_tp3 = Strategy.calculate_pending_zone_sl_tp(
-        m1_df, m5_df, "SELL", sell_trig, opposite_entry=buy_trig
+        m1_df, m1_df, "SELL", sell_trig, opposite_entry=buy_trig
     )
     sl0 = float(getattr(config, "SMC_PENDING_STOP_SL", 0.0))
     buy_legs = [
@@ -505,7 +505,7 @@ def _apply_step2_hedge_exits(mt5_client, priors, reverses, P, m1_df, m5_df, add_
             if mt5_client.modify_sl(r.ticket, 0.0):
                 add_log(f"🔓 RUNNER KEEP OPEN: cleared premature SL #{r.ticket}")
         side = "SELL" if r.type == mt5.POSITION_TYPE_SELL else "BUY"
-        _, tp1, _, _ = Strategy.calculate_pending_zone_sl_tp(m1_df, m5_df, side, float(r.price_open))
+        _, tp1, _, _ = Strategy.calculate_pending_zone_sl_tp(m1_df, m1_df, side, float(r.price_open))
         tp1 = round(float(tp1), dig)
         if abs(tp1 - P) < 1.0:
             tp1 = round(P - 15.0, dig) if side == "SELL" else round(P + 15.0, dig)
@@ -792,7 +792,7 @@ def manage_smc_pmax_recovery(mt5_client, bot_state, m1_df, m5_df, curr_ask, curr
     tol = float(getattr(config, "SMC_BASKET_EQUAL_TOLERANCE", 1.0))
     neut_tol = float(getattr(config, "SMC_NEUTRALIZE_PROFIT_TOLERANCE", 2.0))
 
-    m5_status = Strategy.m5_hit_confirm_status(m1_df, m5_df)
+    m5_status = Strategy.m5_hit_confirm_status(m1_df, m1_df)
     bias = m5_status.get("dual", "MIXED")
     bot_state["m5_trend_status"] = m5_status
 
@@ -801,7 +801,7 @@ def manage_smc_pmax_recovery(mt5_client, bot_state, m1_df, m5_df, curr_ask, curr
     buy_stops = sell_stops = []
     try:
         _manage_smc_body(
-            mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid, add_log,
+            mt5_client, bot_state, st, m1_df, m1_df, curr_ask, curr_bid, add_log,
             max_steps, dig, base_lot, tol, neut_tol, m5_status, bias,
         )
     finally:
@@ -845,8 +845,8 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
     vmin, vmax, vstep = mt5_client.get_volume_constraints(config.SYMBOL)
 
     lvls = Strategy.get_validated_breakout_levels(m1_df, curr_ask, curr_bid, broker_stops)
-    buy_c = h1_m5_pattern_gate(m1_df, m5_df, "BUY")
-    sell_c = h1_m5_pattern_gate(m1_df, m5_df, "SELL")
+    buy_c = h1_m5_pattern_gate(m1_df, m1_df, "BUY")
+    sell_c = h1_m5_pattern_gate(m1_df, m1_df, "SELL")
     buy_confirmed = bool(bias == "BUY" and buy_c.get("ok"))
     sell_confirmed = bool(bias == "SELL" and sell_c.get("ok"))
     buy_trig = lvls["buy_stop"]
@@ -890,7 +890,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
         if buy_confirmed:
             _cancel_orders(buy_stops + sell_stops)
             _, b_tp1, b_tp2, b_tp3 = Strategy.calculate_pending_zone_sl_tp(
-                m1_df, m5_df, "BUY", curr_ask, opposite_entry=curr_bid
+                m1_df, m1_df, "BUY", curr_ask, opposite_entry=curr_bid
             )
             r1 = mt5_client.open_order(config.SYMBOL, mt5.ORDER_TYPE_BUY, base_lot, sl0, b_tp1, magic=MAGIC_BREAKOUT_BUY)
             r2 = mt5_client.open_order(config.SYMBOL, mt5.ORDER_TYPE_BUY, base_lot, sl0, b_tp2, magic=MAGIC_BRK_TP2_BUY)
@@ -906,7 +906,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
         if sell_confirmed:
             _cancel_orders(buy_stops + sell_stops)
             _, s_tp1, s_tp2, s_tp3 = Strategy.calculate_pending_zone_sl_tp(
-                m1_df, m5_df, "SELL", curr_bid, opposite_entry=curr_ask
+                m1_df, m1_df, "SELL", curr_bid, opposite_entry=curr_ask
             )
             r1 = mt5_client.open_order(config.SYMBOL, mt5.ORDER_TYPE_SELL, base_lot, sl0, s_tp1, magic=MAGIC_BREAKOUT_SELL)
             r2 = mt5_client.open_order(config.SYMBOL, mt5.ORDER_TYPE_SELL, base_lot, sl0, s_tp2, magic=MAGIC_BRK_TP2_SELL)
@@ -923,7 +923,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
         # Near-hit: PMAX + HalfTrend + candle pattern ALL must match that side → KEEP; else MODIFY away.
         if buy_stops:
             gate = Strategy.should_confirm_or_modify_stop(
-                "BUY_STOP", curr_ask, float(buy_stops[0].price_open), m1_df, m5_df, broker_stops
+                "BUY_STOP", curr_ask, float(buy_stops[0].price_open), m1_df, m1_df, broker_stops
             )
             if gate["action"] == "MODIFY":
                 for o in buy_stops:
@@ -939,7 +939,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
                 )
         if sell_stops:
             gate = Strategy.should_confirm_or_modify_stop(
-                "SELL_STOP", curr_bid, float(sell_stops[0].price_open), m1_df, m5_df, broker_stops
+                "SELL_STOP", curr_bid, float(sell_stops[0].price_open), m1_df, m1_df, broker_stops
             )
             if gate["action"] == "MODIFY":
                 for o in sell_stops:
@@ -971,10 +971,10 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
         sell_stops = _xau_stops(orders, False)
 
         _, b_tp1, b_tp2, b_tp3 = Strategy.calculate_pending_zone_sl_tp(
-            m1_df, m5_df, "BUY", buy_trig, opposite_entry=sell_trig
+            m1_df, m1_df, "BUY", buy_trig, opposite_entry=sell_trig
         )
         _, s_tp1, s_tp2, s_tp3 = Strategy.calculate_pending_zone_sl_tp(
-            m1_df, m5_df, "SELL", sell_trig, opposite_entry=buy_trig
+            m1_df, m1_df, "SELL", sell_trig, opposite_entry=buy_trig
         )
         buy_legs = [
             (MAGIC_BREAKOUT_BUY, b_tp1),
@@ -1018,10 +1018,10 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
             mt5_client.modify_sl(runner.ticket, be)
         elif side == "BUY" and ask > 0 and be < ask - 0.2:
             mt5_client.modify_sl(runner.ticket, be)
-        _, tp1, _, _ = Strategy.calculate_pending_zone_sl_tp(m1_df, m5_df, side, float(runner.price_open))
+        _, tp1, _, _ = Strategy.calculate_pending_zone_sl_tp(m1_df, m1_df, side, float(runner.price_open))
         mt5_client.modify_tp(runner.ticket, round(float(tp1), dig))
         _place_both_base_stops(
-            mt5_client, m1_df, m5_df, buy_trig, sell_trig, st, lvls, base_lot, add_log, buy_stops, sell_stops, bias=bias
+            mt5_client, m1_df, m1_df, buy_trig, sell_trig, st, lvls, base_lot, add_log, buy_stops, sell_stops, bias=bias
         )
         return
 
@@ -1041,7 +1041,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
         st["original_leg_lot"] = float(buy_pos[0].volume)
         _apply_tp1_be(mt5_client, buy_pos, "BUY", add_log, m1_df=m1_df)
         # Widen TP2/TP3 toward farther M1 targets only
-        _, _, tp2, tp3 = Strategy.calculate_pending_zone_sl_tp(m1_df, m5_df, "BUY", float(buy_pos[0].price_open))
+        _, _, tp2, tp3 = Strategy.calculate_pending_zone_sl_tp(m1_df, m1_df, "BUY", float(buy_pos[0].price_open))
         for p in buy_pos:
             mag = int(getattr(p, "magic", 0) or 0)
             if mag in (MAGIC_BRK_TP2_BUY, MAGIC_TP2_BUY):
@@ -1089,7 +1089,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
             xau_now = [p for p in positions if "XAU" in str(getattr(p, "symbol", "")).upper()]
             priors = _xau_side_positions(xau_now, "BUY", exclude_magics=REC_REVERSE_MAGICS)
             _, sells = _split_engine_sides(xau_now)
-            zp, cover = _apply_step2_hedge_exits(mt5_client, priors, sells, P, m1_df, m5_df, add_log)
+            zp, cover = _apply_step2_hedge_exits(mt5_client, priors, sells, P, m1_df, m1_df, add_log)
             st.update({
                 "step": 2, "phase": "HEDGE", "hedge_opened": True, "origin": "BUY",
                 "be_exits_set": bool(zp), "zero_loss_price": zp or P,
@@ -1113,7 +1113,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
         st["prior_tickets"] = [p.ticket for p in sell_pos]
         st["original_leg_lot"] = float(sell_pos[0].volume)
         _apply_tp1_be(mt5_client, sell_pos, "SELL", add_log, m1_df=m1_df)
-        _, _, tp2, tp3 = Strategy.calculate_pending_zone_sl_tp(m1_df, m5_df, "SELL", float(sell_pos[0].price_open))
+        _, _, tp2, tp3 = Strategy.calculate_pending_zone_sl_tp(m1_df, m1_df, "SELL", float(sell_pos[0].price_open))
         for p in sell_pos:
             mag = int(getattr(p, "magic", 0) or 0)
             if mag in (MAGIC_BRK_TP2_SELL, MAGIC_TP2_SELL):
@@ -1160,7 +1160,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
             xau_now = [p for p in positions if "XAU" in str(getattr(p, "symbol", "")).upper()]
             priors = _xau_side_positions(xau_now, "SELL", exclude_magics=REC_REVERSE_MAGICS)
             buys, _ = _split_engine_sides(xau_now)
-            zp, cover = _apply_step2_hedge_exits(mt5_client, priors, buys, P, m1_df, m5_df, add_log)
+            zp, cover = _apply_step2_hedge_exits(mt5_client, priors, buys, P, m1_df, m1_df, add_log)
             st.update({
                 "step": 2, "phase": "HEDGE", "hedge_opened": True, "origin": "SELL",
                 "be_exits_set": bool(zp), "zero_loss_price": zp or P,
@@ -1224,7 +1224,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
         if step_n <= 2 and not st.get("neutralize_opened"):
             if origin == "BUY" and market_buy_pnl < 0:
                 P = float(st.get("zero_loss_price") or 0) or round(float(curr_bid) - move, dig)
-                zp, cover = _apply_step2_hedge_exits(mt5_client, market_buys, sell_pos, P, m1_df, m5_df, add_log)
+                zp, cover = _apply_step2_hedge_exits(mt5_client, market_buys, sell_pos, P, m1_df, m1_df, add_log)
                 st["zero_loss_price"] = zp or P
                 st["be_exits_set"] = bool(zp)
                 st["cover_tickets"] = [c.ticket for c in cover]
@@ -1245,20 +1245,20 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
                         be = round(float(r0.price_open), dig)
                         if mt5.symbol_info_tick(r0.symbol) and be > float(mt5.symbol_info_tick(r0.symbol).bid) + 0.2:
                             mt5_client.modify_sl(r0.ticket, be)
-                        _, tp1, _, _ = Strategy.calculate_pending_zone_sl_tp(m1_df, m5_df, "SELL", float(r0.price_open))
+                        _, tp1, _, _ = Strategy.calculate_pending_zone_sl_tp(m1_df, m1_df, "SELL", float(r0.price_open))
                         mt5_client.modify_tp(r0.ticket, round(float(tp1), dig))
                         st["runner_ticket"] = r0.ticket
                     st.update({"phase": "RUNNER", "hedge_opened": False, "be_exits_set": False, "cover_tickets": []})
                     orders = list(mt5.orders_get() or [])
                     _place_both_base_stops(
-                        mt5_client, m1_df, m5_df, buy_trig, sell_trig, st, lvls, base_lot, add_log,
+                        mt5_client, m1_df, m1_df, buy_trig, sell_trig, st, lvls, base_lot, add_log,
                         _xau_stops(orders, True), _xau_stops(orders, False), bias=bias,
                     )
                 return
 
             if origin == "SELL" and market_sell_pnl < 0:
                 P = float(st.get("zero_loss_price") or 0) or round(float(curr_ask) + move, dig)
-                zp, cover = _apply_step2_hedge_exits(mt5_client, market_sells, buy_pos, P, m1_df, m5_df, add_log)
+                zp, cover = _apply_step2_hedge_exits(mt5_client, market_sells, buy_pos, P, m1_df, m1_df, add_log)
                 st["zero_loss_price"] = zp or P
                 st["be_exits_set"] = bool(zp)
                 st["cover_tickets"] = [c.ticket for c in cover]
@@ -1280,13 +1280,13 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
                         tick = mt5.symbol_info_tick(r0.symbol)
                         if tick and be < float(tick.ask) - 0.2:
                             mt5_client.modify_sl(r0.ticket, be)
-                        _, tp1, _, _ = Strategy.calculate_pending_zone_sl_tp(m1_df, m5_df, "BUY", float(r0.price_open))
+                        _, tp1, _, _ = Strategy.calculate_pending_zone_sl_tp(m1_df, m1_df, "BUY", float(r0.price_open))
                         mt5_client.modify_tp(r0.ticket, round(float(tp1), dig))
                         st["runner_ticket"] = r0.ticket
                     st.update({"phase": "RUNNER", "hedge_opened": False, "be_exits_set": False, "cover_tickets": []})
                     orders = list(mt5.orders_get() or [])
                     _place_both_base_stops(
-                        mt5_client, m1_df, m5_df, buy_trig, sell_trig, st, lvls, base_lot, add_log,
+                        mt5_client, m1_df, m1_df, buy_trig, sell_trig, st, lvls, base_lot, add_log,
                         _xau_stops(orders, True), _xau_stops(orders, False), bias=bias,
                     )
                 return
@@ -1362,7 +1362,7 @@ def _manage_smc_body(mt5_client, bot_state, st, m1_df, m5_df, curr_ask, curr_bid
                 })
                 orders = list(mt5.orders_get() or [])
                 _place_both_base_stops(
-                    mt5_client, m1_df, m5_df, buy_trig, sell_trig, st, lvls, base_lot, add_log,
+                    mt5_client, m1_df, m1_df, buy_trig, sell_trig, st, lvls, base_lot, add_log,
                     _xau_stops(orders, True), _xau_stops(orders, False), bias=bias,
                 )
                 return

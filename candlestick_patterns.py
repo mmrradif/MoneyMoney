@@ -1,7 +1,7 @@
 """
 In-zone candlestick pattern scanner (display only — no trade decisions).
 
-Finds 1 / 2 / 3 / 4-candle patterns separately on H1 and M5.
+Finds 1 / 2 / 3 / 4-candle patterns separately on M1 and M1.
 A pattern is kept only when the confirmation candle overlaps an active
 supply, demand, or FVG zone. Each hit includes meaning, typical outcome,
 and market character (dhormo) — still not a trade signal.
@@ -993,19 +993,19 @@ def latest_bar_bias(df):
     return tf_latest_reading(df)["bias"]
 
 
-def pattern_fill_veto(h1_df, m5_df, side, h1_closed_only=None, m5_closed_only=None):
+def pattern_fill_veto(m1_df, m5_df, side, h1_closed_only=None, m5_closed_only=None):
     """
     Near-hit / fill veto only. Does NOT decide whether to place pending stops.
-    BUY fill blocked if closed H1 or M5 is bearish.
-    SELL fill blocked if closed H1 or M5 is bullish.
+    BUY fill blocked if closed M1 or M1 is bearish.
+    SELL fill blocked if closed M1 or M1 is bullish.
     NONE on a TF is OK (not a veto).
     """
     side_u = str(side).upper()
     want_buy = "BUY" in side_u
-    h1_closed = bool(getattr(config, "H1_CONFIRM_CLOSED", True)) if h1_closed_only is None else bool(h1_closed_only)
-    m5_closed = bool(getattr(config, "M5_CONFIRM_CLOSED", True)) if m5_closed_only is None else bool(m5_closed_only)
-    h1 = tf_latest_reading(h1_df, closed_only=h1_closed)
-    m5 = tf_latest_reading(m5_df, closed_only=m5_closed)
+    h1_closed = bool(getattr(config, "M1_CONFIRM_CLOSED", True)) if h1_closed_only is None else bool(h1_closed_only)
+    m5_closed = bool(getattr(config, "M1_CONFIRM_CLOSED", True)) if m5_closed_only is None else bool(m5_closed_only)
+    h1 = tf_latest_reading(m1_df, closed_only=h1_closed)
+    m5 = tf_latest_reading(m1_df, closed_only=m5_closed)
     if want_buy:
         blocked = h1["has_bear"] or m5["has_bear"]
         why = "bearish closed candle" if blocked else "ok"
@@ -1016,36 +1016,36 @@ def pattern_fill_veto(h1_df, m5_df, side, h1_closed_only=None, m5_closed_only=No
         "ok": not blocked,
         "h1": h1["bias"],
         "m5": m5["bias"],
-        "reason": f"H1 {h1['summary']} | M5 {m5['summary']} ({why})",
+        "reason": f"M1 {h1['summary']} | M1 {m5['summary']} ({why})",
     }
 
 
-def h1_m5_pattern_gate(h1_df, m5_df, side, h1_closed_only=None, m5_closed_only=None):
+def h1_m5_pattern_gate(m1_df, m5_df, side, h1_closed_only=None, m5_closed_only=None):
     """
     Regular market entry confirmation.
-    Trade decision uses M5 candle only.
-    H1 candle is kept for UI visibility only (not used as trade gate).
+    Trade decision uses M1 candle only.
+    M1 candle is kept for UI visibility only (not used as trade gate).
     """
     side_u = str(side).upper()
     want_buy = "BUY" in side_u
-    h1_closed = bool(getattr(config, "H1_CONFIRM_CLOSED", True)) if h1_closed_only is None else bool(h1_closed_only)
-    m5_closed = bool(getattr(config, "M5_CONFIRM_CLOSED", True)) if m5_closed_only is None else bool(m5_closed_only)
-    h1 = tf_latest_reading(h1_df, closed_only=h1_closed)
-    m5 = tf_latest_reading(m5_df, closed_only=m5_closed)
+    h1_closed = bool(getattr(config, "M1_CONFIRM_CLOSED", True)) if h1_closed_only is None else bool(h1_closed_only)
+    m5_closed = bool(getattr(config, "M1_CONFIRM_CLOSED", True)) if m5_closed_only is None else bool(m5_closed_only)
+    h1 = tf_latest_reading(m1_df, closed_only=h1_closed)
+    m5 = tf_latest_reading(m1_df, closed_only=m5_closed)
     h1_mode = "closed" if h1_closed else "live"
     m5_mode = "closed" if m5_closed else "live"
     if want_buy:
         ok = m5["supports_buy"]
-        need = f"M5 {m5_mode} candle bullish/continuation"
+        need = f"M1 {m5_mode} candle bullish/continuation"
         if not ok:
-            why = f"need {m5_mode} M5 bullish/continuation"
+            why = f"need {m5_mode} M1 bullish/continuation"
         else:
             why = "ok"
     else:
         ok = m5["supports_sell"]
-        need = f"M5 {m5_mode} candle bearish/continuation"
+        need = f"M1 {m5_mode} candle bearish/continuation"
         if not ok:
-            why = f"need {m5_mode} M5 bearish/continuation"
+            why = f"need {m5_mode} M1 bearish/continuation"
         else:
             why = "ok"
     return {
@@ -1057,23 +1057,23 @@ def h1_m5_pattern_gate(h1_df, m5_df, side, h1_closed_only=None, m5_closed_only=N
         "m5_detail": m5["summary"],
         "h1_mode": h1_mode,
         "m5_mode": m5_mode,
-        "reason": f"H1 {h1['summary']} | M5 {m5['summary']} ({why})",
+        "reason": f"M1 {h1['summary']} | M1 {m5['summary']} ({why})",
     }
 
 
-def scan_h1_and_m5(h1_df, m5_df, symbol="XAUUSD"):
+def scan_h1_and_m5(m1_df, m5_df, symbol="XAUUSD"):
     empty = {
         "note": "Display only — no trade decision",
-        "h1": {"timeframe": "H1", "zones": [], "current_zones": [], "patterns": [], "count": 0, "status": "no_data"},
-        "m5": {"timeframe": "M5", "zones": [], "current_zones": [], "patterns": [], "count": 0, "status": "no_data"},
+        "h1": {"timeframe": "M1", "zones": [], "current_zones": [], "patterns": [], "count": 0, "status": "no_data"},
+        "m5": {"timeframe": "M1", "zones": [], "current_zones": [], "patterns": [], "count": 0, "status": "no_data"},
     }
     try:
         is_gold = "XAU" in str(symbol).upper()
         digits = 2 if is_gold else 5
         return {
             "note": "Display only — no trade decision",
-            "h1": scan_timeframe(h1_df, "H1", lookback=20, digits=digits),
-            "m5": scan_timeframe(m5_df, "M5", lookback=32, digits=digits),
+            "h1": scan_timeframe(m1_df, "M1", lookback=20, digits=digits),
+            "m5": scan_timeframe(m1_df, "M1", lookback=32, digits=digits),
         }
     except Exception:
         return empty
