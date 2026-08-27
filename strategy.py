@@ -125,8 +125,8 @@ class Strategy:
             else:
                 sl_price = entry_price - (h1_atr * 2.0)
 
-            risk = max(10.0 if is_gold else 0.0010, entry_price - sl_price)
-            min_tp_dist = max(risk * 1.5, 15.0 if is_gold else risk * 1.5)
+            risk = max(h1_atr * 0.5, entry_price - sl_price)
+            min_tp_dist = max(risk * 1.5, risk * 1.1)
 
             valid_supplies = [s for s in h1_supplies if s >= entry_price + min_tp_dist]
             if valid_supplies:
@@ -141,8 +141,8 @@ class Strategy:
             else:
                 sl_price = entry_price + (h1_atr * 2.0)
 
-            risk = max(10.0 if is_gold else 0.0010, sl_price - entry_price)
-            min_tp_dist = max(risk * 1.5, 15.0 if is_gold else risk * 1.5)
+            risk = max(h1_atr * 0.5, sl_price - entry_price)
+            min_tp_dist = max(risk * 1.5, risk * 1.1)
 
             valid_demands = [d for d in h1_demands if d <= entry_price - min_tp_dist]
             if valid_demands:
@@ -360,7 +360,7 @@ class Strategy:
         if max_from_price < min_from_price + 8.0:
             max_from_price = min_from_price + 8.0
         min_span = max(h1_atr * 1.20, 28.0 if is_gold else h1_atr * 1.20)
-        buf = max(h1_atr * 0.35, 10.0 if is_gold else h1_atr * 0.35)
+        buf = max(h1_atr * 0.35, m5_atr * 0.35)
 
         h1_high = _f(last_h1, 'last_high', curr_ask + min_from_price)
         h1_low = _f(last_h1, 'last_low', curr_bid - min_from_price)
@@ -461,7 +461,7 @@ class Strategy:
             h1_atr = max(h1_atr, m5_atr * 3.0)
 
         is_gold = "XAU" in str(config.SYMBOL).upper()
-        min_risk = max(h1_atr * 1.5, 25.0 if is_gold else h1_atr * 1.5)
+        min_risk = max(h1_atr * 1.5, m5_atr * 1.2)
 
         def _hist_levels(dfs, cols):
             out = []
@@ -537,13 +537,13 @@ class Strategy:
                 ('Measured Move 2.0', entry_price + range_h * 2.00),
             ])
 
-            min_gap = max(risk * 1.0, 15.0 if is_gold else risk * 1.0)
+            min_gap = max(risk * 1.0, max(m5_atr * 0.8, 1.5))
             above = [(n, round(t, 2)) for n, t in named if t >= entry_price + min_gap]
             # Prefer SMC/valid zones: sort by price, but when clustering prefer higher priority name
             above.sort(key=lambda x: (x[1], _rank(x[0])))
             dedup = []
             for n, t in above:
-                if not dedup or abs(t - dedup[-1][1]) >= max(h1_atr * 1.0, 10.0 if is_gold else h1_atr * 1.0):
+                if not dedup or abs(t - dedup[-1][1]) >= max(h1_atr * 1.0, m5_atr * 0.5):
                     dedup.append((n, t))
                 elif _rank(n) < _rank(dedup[-1][0]):
                     dedup[-1] = (n, t)
@@ -551,7 +551,7 @@ class Strategy:
 
             buy_tps, buy_notes = [], []
             for n, z in above:
-                if buy_tps and z <= buy_tps[-1] + max(risk * 0.5, 10.0 if is_gold else risk * 0.5):
+                if buy_tps and z <= buy_tps[-1] + max(risk * 0.5, m5_atr * 0.5):
                     continue
                 buy_tps.append(z)
                 buy_notes.append(f"zone {n}@{z:.2f}")
@@ -559,7 +559,7 @@ class Strategy:
                     break
 
             while len(buy_tps) < 2:
-                z = entry_price + max(risk * (1.0 + 0.5 * len(buy_tps)), (15.0 if is_gold else 15.0) * (len(buy_tps) + 1))
+                z = entry_price + max(risk * (1.0 + 0.5 * len(buy_tps)), (m5_atr * 1.0) * (len(buy_tps) + 1))
                 if buy_tps:
                     z = max(z, buy_tps[-1] + max(risk * 0.5, 15.0 if is_gold else risk * 0.5))
                 buy_tps.append(z)
@@ -586,7 +586,7 @@ class Strategy:
                 for lvl in _hist_levels([m1_df], ['mtf_res_zone', 'resistance', 'last_high']):
                     mtf2_named.append(('M1 Hist Res', lvl))
 
-            min_tp2 = max(tp1 + max(h1_atr * 1.5, 15.0 if is_gold else 0.0015), entry_price + mtf_span * 0.75)
+            min_tp2 = max(tp1 + max(h1_atr * 1.5, m5_atr * 1.2), entry_price + mtf_span * 0.75)
             mtf2_ok = [(n, round(z, 2)) for n, z in mtf2_named if z >= min_tp2]
             mtf2_ok.sort(key=lambda x: x[1])
             if mtf2_ok:
@@ -669,12 +669,12 @@ class Strategy:
                 ('Measured Move 1.5', entry_price - range_h * 1.50),
                 ('Measured Move 2.0', entry_price - range_h * 2.00),
             ])
-            min_gap = max(risk * 1.0, 15.0 if is_gold else risk * 1.0)
+            min_gap = max(risk * 1.0, max(m5_atr * 0.8, 1.5))
             below = [(n, round(t, 2)) for n, t in named if 0 < t <= entry_price - min_gap]
             below.sort(key=lambda x: (-x[1], _rank(x[0])))
             dedup = []
             for n, t in below:
-                if not dedup or abs(t - dedup[-1][1]) >= max(h1_atr * 1.0, 10.0 if is_gold else h1_atr * 1.0):
+                if not dedup or abs(t - dedup[-1][1]) >= max(h1_atr * 1.0, m5_atr * 0.5):
                     dedup.append((n, t))
                 elif _rank(n) < _rank(dedup[-1][0]):
                     dedup[-1] = (n, t)
@@ -682,7 +682,7 @@ class Strategy:
 
             sell_tps, sell_notes = [], []
             for n, z in below:
-                if sell_tps and z >= sell_tps[-1] - max(risk * 0.5, 10.0 if is_gold else risk * 0.5):
+                if sell_tps and z >= sell_tps[-1] - max(risk * 0.5, m5_atr * 0.5):
                     continue
                 sell_tps.append(z)
                 sell_notes.append(f"zone {n}@{z:.2f}")
@@ -690,7 +690,7 @@ class Strategy:
                     break
 
             while len(sell_tps) < 2:
-                z = entry_price - max(risk * (1.0 + 0.5 * len(sell_tps)), (15.0 if is_gold else 15.0) * (len(sell_tps) + 1))
+                z = entry_price - max(risk * (1.0 + 0.5 * len(sell_tps)), (m5_atr * 1.0) * (len(sell_tps) + 1))
                 if sell_tps:
                     z = min(z, sell_tps[-1] - max(risk * 0.5, 15.0 if is_gold else risk * 0.5))
                 sell_tps.append(z)
@@ -717,7 +717,7 @@ class Strategy:
                 for lvl in _hist_levels([m1_df], ['mtf_sup_zone', 'support', 'last_low']):
                     mtf2_named.append(('M1 Hist Sup', lvl))
 
-            max_tp2 = min(tp1 - max(h1_atr * 1.5, 15.0 if is_gold else 0.0015), entry_price - mtf_span * 0.75)
+            max_tp2 = min(tp1 - max(h1_atr * 1.5, m5_atr * 1.2), entry_price - mtf_span * 0.75)
             mtf2_ok = [(n, round(z, 2)) for n, z in mtf2_named if 0 < z <= max_tp2]
             mtf2_ok.sort(key=lambda x: x[1], reverse=True)
             if mtf2_ok:
