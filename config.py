@@ -19,7 +19,7 @@ SYMBOL = "XAUUSDm"
 MAGIC_NUMBER = 100999             # Unique Expert Advisor Magic ID for MT5 Order Tracking
 
 # Dynamic Capital Preservation & Trade Parameters
-MAX_OPEN_TRADES = 1              # Only 1 trade at a time
+MAX_OPEN_TRADES = 5              # Only 1 trade at a time
 ENABLE_FLOATING_PROFIT_CAP = False  # OFF by default — enable from UI if needed (Clear Close Rules keeps OFF)
 ENABLE_FLOATING_LOSS_CAP = True     # ON by default from UI input configuration
 FLOATING_MAX_PROFIT_PERCENT = 10.0 # Used only when profit cap is enabled from UI
@@ -39,7 +39,7 @@ PENDING_MAX_LOT = 0.80             # Cap pending martingale
 
 # PMAX_RECOVERY — unlimited 0-loss steps; Step2 keeps 1 runner; Step3+ flatten all
 MAX_RECOVERY_STEPS = 99            # Soft cap only; keep recovering until flat
-ZONE_EDGE_ATR_FRAC = 0.15
+ZONE_EDGE_ATR_FRAC = 0.05
 APPROACH_ATR_FRAC = 0.5
 REQUIRE_DUAL_TREND = True
 MAX_RECOVERY_LOT_MULT = 5.0

@@ -780,7 +780,7 @@ class Strategy:
         atr = Strategy._smc_f(last, 'atr', 5.0)
         frac = float(getattr(config, 'SMC_ZONE_EDGE_ATR_FRAC', 0.15))
         is_gold = "XAU" in str(config.SYMBOL).upper()
-        return max(atr * frac, float(broker_stops or 0), 2.0 if is_gold else atr * frac)
+        return max(atr * frac, float(broker_stops or 0), 0.30 if is_gold else atr * frac)
 
     @staticmethod
     def price_outside_zone(side, zone_low, zone_high, buffer, for_entry=True):
@@ -853,9 +853,9 @@ class Strategy:
         buy_stop = Strategy.price_outside_zone('BUY_STOP', res_zone_low, res_zone_high, buf)
         sell_stop = Strategy.price_outside_zone('SELL_STOP', sup_zone_low, sup_zone_high, buf)
         if buy_stop <= ask:
-            buy_stop = ask + max(buf * 2, 2.0 if is_gold else buf)
+            buy_stop = ask + max(buf * 2, 0.30 if is_gold else buf)
         if sell_stop >= bid:
-            sell_stop = bid - max(buf * 2, 2.0 if is_gold else buf)
+            sell_stop = bid - max(buf * 2, 0.30 if is_gold else buf)
 
         # Hard reject if still inside zone
         if not Strategy.assert_outside_zone(buy_stop, res_zone_low, res_zone_high):
