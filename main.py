@@ -1677,8 +1677,9 @@ def bot_loop():
                         checklist_info["market_closed"] = True
                         bot_state["checklist"] = checklist_info
                         bot_state["market_regime"] = checklist_info.get("market_regime") or {}
-                        h1_df = Strategy.calculate_indicators(h1_rates)
-                        m5_df = Strategy.calculate_indicators(m5_rates)
+                        m1_df = Strategy.calculate_indicators(h1_rates)
+                        m1_df = Strategy.calculate_indicators(h1_rates)
+                        h1_df = m1_df
                         bot_state["candlestick_patterns"] = scan_h1_and_m5(h1_df, m5_df, config.SYMBOL)
                 except Exception as e_chk:
                     logging.error(f"Checklist refresh while market closed failed: {e_chk}")
@@ -1696,7 +1697,8 @@ def bot_loop():
             m5_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=250)
 
             if h1_rates is not None and m15_rates is not None and m5_rates is not None:
-                h1_df = Strategy.calculate_indicators(h1_rates)
+                m1_df = Strategy.calculate_indicators(h1_rates)
+                h1_df = m1_df
                 m15_df = Strategy.calculate_indicators(m15_rates)
                 m5_df = Strategy.calculate_indicators(m5_rates)
 
