@@ -178,7 +178,7 @@ def get_status():
 
         # Calculate current dynamic Lot Size for display in manual order popups
         try:
-            h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_H1, 250)
+            h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, 250)
             m5_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, 250)
             if h1_rates is not None and not h1_rates.empty and m5_rates is not None and not m5_rates.empty:
                 h1_calc = Strategy.calculate_indicators(h1_rates)
@@ -241,8 +241,8 @@ def set_symbol():
 
         # Pre-fetch MT5 rates immediately to prime chart and checklist
         mt5_client = MT5Interface()
-        h1_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_H1, num_bars=250)
-        m15_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M15, num_bars=250)
+        h1_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, num_bars=250)
+        m15_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, num_bars=250)
         m5_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, num_bars=250)
 
         if h1_rates is not None and m15_rates is not None and m5_rates is not None:
@@ -416,7 +416,7 @@ def manual_buy():
             add_log(f"[ERROR] {err_msg}")
             return jsonify({"status": "error", "message": err_msg}), 400
         
-        h1_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_H1, 250)
+        h1_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, 250)
         m5_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, 250)
         if h1_rates is None or h1_rates.empty or m5_rates is None or m5_rates.empty:
             err_msg = f"Failed to fetch market rates for {valid_symbol}"
@@ -493,7 +493,7 @@ def manual_sell():
             add_log(f"[ERROR] {err_msg}")
             return jsonify({"status": "error", "message": err_msg}), 400
         
-        h1_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_H1, 250)
+        h1_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, 250)
         m5_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, 250)
         if h1_rates is None or h1_rates.empty or m5_rates is None or m5_rates.empty:
             err_msg = f"Failed to fetch market rates for {valid_symbol}"
@@ -715,8 +715,8 @@ def place_pending():
         if valid_symbol is None:
             valid_symbol = config.SYMBOL
 
-        h1_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_H1, num_bars=100)
-        m15_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M15, num_bars=100)
+        h1_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, num_bars=100)
+        m15_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, num_bars=100)
         m5_rates = mt5_client.fetch_rates(valid_symbol, mt5.TIMEFRAME_M1, num_bars=100)
 
         if m5_rates is None or len(m5_rates) == 0:
@@ -1085,7 +1085,7 @@ def manage_tp3_runners(mt5_client, h1_rates=None, m5_rates=None):
     sell_matched = int(checklist.get("sell_matched_count", 0) or 0)
 
     if h1_rates is None:
-        h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_H1, num_bars=100)
+        h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=100)
     if m5_rates is None:
         m5_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=100)
 
@@ -1185,9 +1185,9 @@ def manage_open_positions(mt5_client, h1_rates=None, m15_rates=None, m5_rates=No
 
     if positions:
         if h1_rates is None:
-            h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_H1, num_bars=100)
+            h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=100)
         if m15_rates is None:
-            m15_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M15, num_bars=100)
+            m15_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=100)
         if m5_rates is None:
             m5_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=100)
 
@@ -1329,7 +1329,7 @@ def manage_open_positions(mt5_client, h1_rates=None, m15_rates=None, m5_rates=No
             # AUTO-REPAIR MISSING SL OR TP ON ANY OPEN POSITION (USING FULL SMC STRUCTURE ZONES)
             # TP3 runners: NEVER attach broker TP (close only on SL / reversal). Repair SL only.
             side_str = 'BUY' if pos_type == mt5.POSITION_TYPE_BUY else 'SELL'
-            h1_rates_pos = mt5_client.fetch_rates(pos_symbol, mt5.TIMEFRAME_H1, num_bars=250)
+            h1_rates_pos = mt5_client.fetch_rates(pos_symbol, mt5.TIMEFRAME_M1, num_bars=250)
             h1_df_pos = Strategy.calculate_indicators(h1_rates_pos) if h1_rates_pos is not None else pos_df
             smc_sl_rep, smc_tp_rep, _, _ = Strategy.calculate_valid_zone_sl_tp(h1_df_pos, pos_df, side_str, entry_price)
 
@@ -1446,8 +1446,8 @@ def manage_open_positions(mt5_client, h1_rates=None, m15_rates=None, m5_rates=No
             if is_tp3 or is_tp2 or int(getattr(pos, 'magic', 0) or 0) not in (MAGIC_MAIN_BUY, MAGIC_MAIN_SELL):
                 continue
 
-            sym_h1 = mt5_client.fetch_rates(pos_symbol, mt5.TIMEFRAME_H1, num_bars=100)
-            sym_m15 = mt5_client.fetch_rates(pos_symbol, mt5.TIMEFRAME_M15, num_bars=100)
+            sym_h1 = mt5_client.fetch_rates(pos_symbol, mt5.TIMEFRAME_M1, num_bars=100)
+            sym_m15 = mt5_client.fetch_rates(pos_symbol, mt5.TIMEFRAME_M1, num_bars=100)
             sym_m5 = pos_rates if pos_rates is not None else mt5_client.fetch_rates(pos_symbol, mt5.TIMEFRAME_M1, num_bars=100)
 
             if sym_h1 is not None and sym_m15 is not None and sym_m5 is not None:
@@ -1662,8 +1662,8 @@ def bot_loop():
                     bot_state["prev_market_open"] = False
                 # Still refresh BUY/SELL checklist from last available bars so UI is not stuck on "Scanning..."
                 try:
-                    h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_H1, num_bars=250)
-                    m15_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M15, num_bars=250)
+                    h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=250)
+                    m15_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=250)
                     m5_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=250)
                     if h1_rates is not None and m15_rates is not None and m5_rates is not None:
                         checklist_info = Strategy.get_checklist_status(h1_rates, m15_rates, m5_rates)
@@ -1684,9 +1684,9 @@ def bot_loop():
                     bot_state["prev_market_open"] = True
 
             # 3. Fetch Triple Timeframe Data (H1, M15, M5)
-            h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_H1, num_bars=250)
+            h1_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=250)
 
-            m15_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M15, num_bars=250)
+            m15_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=250)
             m5_rates = mt5_client.fetch_rates(config.SYMBOL, mt5.TIMEFRAME_M1, num_bars=250)
 
             if h1_rates is not None and m15_rates is not None and m5_rates is not None:

@@ -10,20 +10,20 @@ from candlestick_patterns import h1_m5_pattern_gate, tf_latest_reading
 
 class Strategy:
     @staticmethod
-    def calculate_dynamic_rrr(h1_df, m15_df, m5_df, signal):
+    def calculate_dynamic_rrr(m1_df, m15_df, m5_df, signal):
         """
         100% Fully Dynamic Market-Structure-Based Risk-to-Reward Ratio (RRR):
         Calculates exact RRR dynamically based on:
         1. Distance to next Key SMC Liquidity Target (Key Resistance / BSL for BUY, Support / SSL for SELL)
         2. Average True Range (ATR) & Volatility Expansion Ratio
-        3. Multi-timeframe trend Alignment Ratio (H1 + M15 + M5 Confluence)
+        3. Multi-timeframe trend Alignment Ratio (M1 + M15 + M5 Confluence)
         """
-        if h1_df is None or m15_df is None or m5_df is None or len(m5_df) == 0:
+        if m1_df is None or m15_df is None or m5_df is None or len(m5_df) == 0:
             return 2.0
 
         last_m5 = m5_df.iloc[-1]
         last_m15 = m15_df.iloc[-1]
-        last_h1 = h1_df.iloc[-1]
+        last_h1 = m1_df.iloc[-1]
 
         close_p = float(last_m5['close'])
         atr_val = float(last_m5['atr']) if 'atr' in last_m5 and pd.notna(last_m5['atr']) and last_m5['atr'] > 0 else (close_p * 0.002)
@@ -58,17 +58,17 @@ class Strategy:
         return final_rrr
 
     @staticmethod
-    def calculate_manual_smc_sl_tp(h1_df, m5_df, signal, entry_price):
+    def calculate_manual_smc_sl_tp(m1_df, m5_df, signal, entry_price):
         """
-        Calculate H1 Timeframe SMC Structure SL and TP for Manual Trades.
-        - BUY: SL below H1 SMC Demand Zone / H1 Support OB / H1 Swing Low; TP at H1 SMC Supply Zone / H1 Resistance OB.
-        - SELL: SL above H1 SMC Supply Zone / H1 Resistance OB / H1 Swing High; TP at H1 SMC Demand Zone / H1 Support OB.
+        Calculate M1 Timeframe SMC Structure SL and TP for Manual Trades.
+        - BUY: SL below M1 SMC Demand Zone / M1 Support OB / M1 Swing Low; TP at M1 SMC Supply Zone / M1 Resistance OB.
+        - SELL: SL above M1 SMC Supply Zone / M1 Resistance OB / M1 Swing High; TP at M1 SMC Demand Zone / M1 Support OB.
         """
         entry_price = float(entry_price)
         if entry_price <= 0:
             return 0.0, 0.0
 
-        last_h1 = h1_df.iloc[-1] if (h1_df is not None and len(h1_df) > 0) else {}
+        last_h1 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else {}
         last_m5 = m5_df.iloc[-1] if (m5_df is not None and len(m5_df) > 0) else last_h1
 
         def _f(row, key, default=0.0):
@@ -86,15 +86,15 @@ class Strategy:
         digits = 2 if is_gold else 5
         sl_buffer = max(h1_atr * 0.30, 2.0 if is_gold else h1_atr * 0.30)
 
-        # True H1 SMC Demand / Support Structure Candidates (below price)
+        # True M1 SMC Demand / Support Structure Candidates (below price)
         h1_demands = []
         for key in ['mtf_sup_zone', 'last_low', 'support', 'valid_low']:
             v = _f(last_h1, key, 0.0)
             if 0 < v < (entry_price - sl_buffer):
                 h1_demands.append(v)
 
-        if 'swing_low' in h1_df.columns:
-            for v in h1_df['swing_low'].dropna().tail(30).tolist():
+        if 'swing_low' in m1_df.columns:
+            for v in m1_df['swing_low'].dropna().tail(30).tolist():
                 try:
                     val = float(v)
                     if 0 < val < (entry_price - sl_buffer):
@@ -102,15 +102,15 @@ class Strategy:
                 except Exception:
                     pass
 
-        # True H1 SMC Supply / Resistance Structure Candidates (above price)
+        # True M1 SMC Supply / Resistance Structure Candidates (above price)
         h1_supplies = []
         for key in ['mtf_res_zone', 'last_high', 'resistance', 'valid_high']:
             v = _f(last_h1, key, 0.0)
             if v > (entry_price + sl_buffer):
                 h1_supplies.append(v)
 
-        if 'swing_high' in h1_df.columns:
-            for v in h1_df['swing_high'].dropna().tail(30).tolist():
+        if 'swing_high' in m1_df.columns:
+            for v in m1_df['swing_high'].dropna().tail(30).tolist():
                 try:
                     val = float(v)
                     if val > (entry_price + sl_buffer):
@@ -153,15 +153,15 @@ class Strategy:
         return round(sl_price, digits), round(tp_price, digits)
 
     @staticmethod
-    def calculate_valid_zone_sl_tp(h1_df, m5_df, signal, entry_price):
+    def calculate_valid_zone_sl_tp(m1_df, m5_df, signal, entry_price):
         """
         Regular market entry SL/TP:
-        - SL OUTSIDE nearest valid H1 demand (BUY) / supply (SELL) zone
+        - SL OUTSIDE nearest valid M1 demand (BUY) / supply (SELL) zone
         - TP AT valid opposite SMC / structure zones (not before zone)
         """
         entry_price = float(entry_price)
         last_m5 = m5_df.iloc[-1] if (m5_df is not None and len(m5_df) > 0) else {}
-        last_h1 = h1_df.iloc[-1] if (h1_df is not None and len(h1_df) > 0) else last_m5
+        last_h1 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else last_m5
 
         def _f(row, key, default):
             try:
@@ -200,9 +200,9 @@ class Strategy:
 
         if signal == 'BUY':
             candidates = [
-                ('H1 Swing Low', _f(last_h1, 'last_low', entry_price - min_risk)),
-                ('H1 MTF Demand', _f(last_h1, 'mtf_sup_zone', entry_price - min_risk)),
-                ('H1 Support', _f(last_h1, 'support', entry_price - min_risk)),
+                ('M1 Swing Low', _f(last_h1, 'last_low', entry_price - min_risk)),
+                ('M1 MTF Demand', _f(last_h1, 'mtf_sup_zone', entry_price - min_risk)),
+                ('M1 Support', _f(last_h1, 'support', entry_price - min_risk)),
                 ('Gann 90 Support', _f(last_h1, 'gann_sq9_90_dn', entry_price - min_risk)),
                 ('M5 Support', _f(last_m5, 'support', entry_price - min_risk)),
             ]
@@ -212,7 +212,7 @@ class Strategy:
                 zone_name, zone_lvl = zones[0]
                 sl_price = zone_lvl - sl_buf
             else:
-                zone_name, zone_lvl = ('H1 ATR', entry_price - min_risk)
+                zone_name, zone_lvl = ('M1 ATR', entry_price - min_risk)
                 sl_price = entry_price - min_risk
 
             risk = entry_price - sl_price
@@ -225,9 +225,9 @@ class Strategy:
 
             # TP AT opposite supply / SMC zones (priority order)
             named = [
-                ('H1 Swing High', _f(last_h1, 'last_high', 0)),
-                ('H1 MTF Supply', _f(last_h1, 'mtf_res_zone', 0)),
-                ('H1 Resistance OB', _f(last_h1, 'resistance', 0)),
+                ('M1 Swing High', _f(last_h1, 'last_high', 0)),
+                ('M1 MTF Supply', _f(last_h1, 'mtf_res_zone', 0)),
+                ('M1 Resistance OB', _f(last_h1, 'resistance', 0)),
                 ('Fib 1.618 Ext', _f(last_h1, 'fib_1618', 0)),
                 ('Fib 1000', _f(last_h1, 'fib_1000', 0)),
                 ('Gann 90', _f(last_h1, 'gann_sq9_90_up', 0)),
@@ -257,9 +257,9 @@ class Strategy:
             )
         else:
             candidates = [
-                ('H1 Swing High', _f(last_h1, 'last_high', entry_price + min_risk)),
-                ('H1 MTF Supply', _f(last_h1, 'mtf_res_zone', entry_price + min_risk)),
-                ('H1 Resistance', _f(last_h1, 'resistance', entry_price + min_risk)),
+                ('M1 Swing High', _f(last_h1, 'last_high', entry_price + min_risk)),
+                ('M1 MTF Supply', _f(last_h1, 'mtf_res_zone', entry_price + min_risk)),
+                ('M1 Resistance', _f(last_h1, 'resistance', entry_price + min_risk)),
                 ('Gann 90 Resistance', _f(last_h1, 'gann_sq9_90_up', entry_price + min_risk)),
                 ('M5 Resistance', _f(last_m5, 'resistance', entry_price + min_risk)),
             ]
@@ -269,7 +269,7 @@ class Strategy:
                 zone_name, zone_lvl = zones[0]
                 sl_price = zone_lvl + sl_buf
             else:
-                zone_name, zone_lvl = ('H1 ATR', entry_price + min_risk)
+                zone_name, zone_lvl = ('M1 ATR', entry_price + min_risk)
                 sl_price = entry_price + min_risk
 
             risk = sl_price - entry_price
@@ -281,9 +281,9 @@ class Strategy:
                 risk = max_risk
 
             named = [
-                ('H1 Swing Low', _f(last_h1, 'last_low', 0)),
-                ('H1 MTF Demand', _f(last_h1, 'mtf_sup_zone', 0)),
-                ('H1 Support OB', _f(last_h1, 'support', 0)),
+                ('M1 Swing Low', _f(last_h1, 'last_low', 0)),
+                ('M1 MTF Demand', _f(last_h1, 'mtf_sup_zone', 0)),
+                ('M1 Support OB', _f(last_h1, 'support', 0)),
                 ('Fib 000', _f(last_h1, 'fib_000', 0)),
                 ('Gann 90', _f(last_h1, 'gann_sq9_90_dn', 0)),
                 ('Gann 180', _f(last_h1, 'gann_sq9_180_dn', 0)),
@@ -315,18 +315,18 @@ class Strategy:
         return round(sl_price, digits), round(tp1, digits), round(tp2, digits), round(tp3, digits)
 
     @staticmethod
-    def calculate_pending_triggers(h1_df, m5_df, curr_ask, curr_bid, m15_df=None):
+    def calculate_pending_triggers(m1_df, m5_df, curr_ask, curr_bid, m15_df=None):
         """
         Pending BUY_STOP / SELL_STOP prices.
 
-        Uses the CURRENT session box (M5/M15 + last 12 H1 bars), not the 50-bar
-        H1 extreme (that was ~$160 wide). Last 5-bar fractal is also ignored
+        Uses the CURRENT session box (M5/M15 + last 12 M1 bars), not the 50-bar
+        M1 extreme (that was ~$160 wide). Last 5-bar fractal is also ignored
         when it sits inside noise.
 
         Band vs live price (gold): about $14–$38 each side.
         """
         last_m5 = m5_df.iloc[-1] if (m5_df is not None and len(m5_df) > 0) else {}
-        last_h1 = h1_df.iloc[-1] if (h1_df is not None and len(h1_df) > 0) else last_m5
+        last_h1 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else last_m5
         last_m15 = m15_df.iloc[-1] if (m15_df is not None and len(m15_df) > 0) else last_m5
 
         def _f(row, key, default):
@@ -369,11 +369,11 @@ class Strategy:
 
         m5_hi, m5_lo = _tail_hl(m5_df, 40)
         m15_hi, m15_lo = _tail_hl(m15_df, 20)
-        h1_hi, h1_lo = _tail_hl(h1_df, 12)
+        h1_hi, h1_lo = _tail_hl(m1_df, 12)
         m5_rmax = _f(last_m5, 'range_max', m5_hi or curr_ask)
         m5_rmin = _f(last_m5, 'range_min', m5_lo or curr_bid)
 
-        # Current box = nearest recent highs/lows (ignore stale 50-bar H1 extremes)
+        # Current box = nearest recent highs/lows (ignore stale 50-bar M1 extremes)
         near_highs = [v for v in (m5_hi, m15_hi, h1_hi, m5_rmax, h1_high, mtf_res) if v and v > curr_ask]
         near_lows = [v for v in (m5_lo, m15_lo, h1_lo, m5_rmin, h1_low, mtf_sup) if v and 0 < v < curr_bid]
         range_top = min(near_highs) if near_highs else curr_ask + min_from_price
@@ -438,7 +438,7 @@ class Strategy:
         }
 
     @staticmethod
-    def calculate_pending_zone_sl_tp(h1_df, m5_df, signal, entry_price, opposite_entry=None):
+    def calculate_pending_zone_sl_tp(m1_df, m5_df, signal, entry_price, opposite_entry=None):
         """
         Pending breakout SL/TP:
         - SL = opposite pending ENTRY (BuyStop SL = SellStop entry, SellStop SL = BuyStop entry)
@@ -446,7 +446,7 @@ class Strategy:
         """
         entry_price = float(entry_price)
         last_m5 = m5_df.iloc[-1] if (m5_df is not None and len(m5_df) > 0) else {}
-        last_h1 = h1_df.iloc[-1] if (h1_df is not None and len(h1_df) > 0) else last_m5
+        last_h1 = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else last_m5
 
         def _f(row, key, default):
             try:
@@ -480,9 +480,9 @@ class Strategy:
 
         # Priority: real SMC first, then fib/gann/pivot, hist swings, then measured-move only as filler
         SMC_PRIORITY = {
-            'H1 Swing High': 0, 'H1 Swing Low': 0,
-            'H1 MTF Supply': 1, 'H1 MTF Demand': 1,
-            'H1 Resistance OB': 2, 'H1 Support OB': 2,
+            'M1 Swing High': 0, 'M1 Swing Low': 0,
+            'M1 MTF Supply': 1, 'M1 MTF Demand': 1,
+            'M1 Resistance OB': 2, 'M1 Support OB': 2,
             'M5 Resistance': 3, 'M5 Support': 3,
             'Hist Supply': 4, 'Hist Demand': 4,
             'Fib 1.618 Ext': 5, 'Fib 1000': 5, 'Fib 000': 5,
@@ -497,8 +497,8 @@ class Strategy:
             return SMC_PRIORITY.get(name, 20)
 
         if signal == 'BUY':
-            sl_price, _ = Strategy.calculate_manual_smc_sl_tp(h1_df, m5_df, 'BUY', entry_price)
-            zone_name = 'H1 Valid Swing Low (Unified Structure)'
+            sl_price, _ = Strategy.calculate_manual_smc_sl_tp(m1_df, m5_df, 'BUY', entry_price)
+            zone_name = 'M1 Valid Swing Low (Unified Structure)'
             if opposite_entry is not None and float(opposite_entry) < entry_price:
                 sl_price = float(opposite_entry)
                 zone_name = 'Opposite SellStop entry (mirror SL)'
@@ -507,12 +507,12 @@ class Strategy:
             if risk < min_risk:
                 sl_price = entry_price - min_risk
                 risk = min_risk
-                zone_name = 'Min H1 ATR risk floor'
+                zone_name = 'Min M1 ATR risk floor'
 
             named = [
-                ('H1 Resistance OB', _f(last_h1, 'resistance', 0)),
-                ('H1 Swing High', _f(last_h1, 'last_high', 0)),
-                ('H1 MTF Supply', _f(last_h1, 'mtf_res_zone', 0)),
+                ('M1 Resistance OB', _f(last_h1, 'resistance', 0)),
+                ('M1 Swing High', _f(last_h1, 'last_high', 0)),
+                ('M1 MTF Supply', _f(last_h1, 'mtf_res_zone', 0)),
                 ('M5 Resistance', _f(last_m5, 'resistance', 0)),
                 ('Gann 90', _f(last_h1, 'gann_sq9_90_up', 0)),
                 ('Gann 180', _f(last_h1, 'gann_sq9_180_up', 0)),
@@ -525,7 +525,7 @@ class Strategy:
                 ('Fib 1.618 Ext', _f(last_h1, 'fib_1618', 0)),
                 ('Fib 1000', _f(last_h1, 'fib_1000', 0)),
             ]
-            for lvl in _hist_levels([h1_df, m5_df], ['swing_high', 'mtf_res_zone', 'resistance', 'last_high']):
+            for lvl in _hist_levels([m1_df, m5_df], ['swing_high', 'mtf_res_zone', 'resistance', 'last_high']):
                 named.append(('Hist Supply', lvl))
 
             rmax = _f(last_m5, 'range_max', _f(last_h1, 'range_max', entry_price))
@@ -568,23 +568,23 @@ class Strategy:
             tp1, tp2 = buy_tps[0], buy_tps[1]
             tp1_note, tp2_note = buy_notes[0], buy_notes[1]
 
-            # TP2 = Strictly H1 SMC Structure Zone (H1 Swing High, H1 Res, H1 MTF) with H1 ATR Minimum Gap ($15.0+ points)
+            # TP2 = Strictly M1 SMC Structure Zone (M1 Swing High, M1 Res, M1 MTF) with M1 ATR Minimum Gap ($15.0+ points)
             h1_mtf_res = _f(last_h1, 'mtf_res_zone', entry_price)
             h1_mtf_sup = _f(last_h1, 'mtf_sup_zone', entry_price - h1_atr * 3)
             mtf_span = max(abs(h1_mtf_res - h1_mtf_sup), h1_atr * 3.0, range_h, risk * 1.2)
 
             mtf2_named = [
-                ('H1 MTF Res', h1_mtf_res),
-                ('H1 Resistance OB', _f(last_h1, 'resistance', 0)),
-                ('H1 Swing High', _f(last_h1, 'last_high', 0)),
-                ('H1 Next Zone', entry_price + mtf_span),
+                ('M1 MTF Res', h1_mtf_res),
+                ('M1 Resistance OB', _f(last_h1, 'resistance', 0)),
+                ('M1 Swing High', _f(last_h1, 'last_high', 0)),
+                ('M1 Next Zone', entry_price + mtf_span),
             ]
-            if h1_df is not None and len(h1_df) > 0:
-                if 'swing_high' in h1_df.columns:
-                    for v in h1_df['swing_high'].dropna().tail(40).tolist():
-                        mtf2_named.append(('H1 Hist Swing High', float(v)))
-                for lvl in _hist_levels([h1_df], ['mtf_res_zone', 'resistance', 'last_high']):
-                    mtf2_named.append(('H1 Hist Res', lvl))
+            if m1_df is not None and len(m1_df) > 0:
+                if 'swing_high' in m1_df.columns:
+                    for v in m1_df['swing_high'].dropna().tail(40).tolist():
+                        mtf2_named.append(('M1 Hist Swing High', float(v)))
+                for lvl in _hist_levels([m1_df], ['mtf_res_zone', 'resistance', 'last_high']):
+                    mtf2_named.append(('M1 Hist Res', lvl))
 
             min_tp2 = max(tp1 + max(h1_atr * 1.5, 15.0 if is_gold else 0.0015), entry_price + mtf_span * 0.75)
             mtf2_ok = [(n, round(z, 2)) for n, z in mtf2_named if z >= min_tp2]
@@ -594,13 +594,13 @@ class Strategy:
                 tp2_note = f"{tp2_n}@{tp2:.2f}"
             else:
                 tp2 = round(min_tp2, 2)
-                tp2_note = f"H1 Measured Res@{tp2:.2f}"
+                tp2_note = f"M1 Measured Res@{tp2:.2f}"
             tp2 = max(float(tp2), min_tp2)
 
             # TP3 = FAR next major reversal zone (Fib/Gann/Hist) — live-updated runner
             import math
             sq = math.sqrt(max(entry_price, 1.0))
-            hist_highs = _hist_levels([h1_df], ['swing_high', 'resistance', 'last_high'])
+            hist_highs = _hist_levels([m1_df], ['swing_high', 'resistance', 'last_high'])
             major_high = max(hist_highs) if hist_highs else 0.0
             far_named = [
                 ('Fib 2.618 Ext', rmin + range_h * 2.618),
@@ -631,8 +631,8 @@ class Strategy:
             )
 
         else:  # SELL
-            sl_price, _ = Strategy.calculate_manual_smc_sl_tp(h1_df, m5_df, 'SELL', entry_price)
-            zone_name = 'H1 Valid Swing High (Unified Structure)'
+            sl_price, _ = Strategy.calculate_manual_smc_sl_tp(m1_df, m5_df, 'SELL', entry_price)
+            zone_name = 'M1 Valid Swing High (Unified Structure)'
             if opposite_entry is not None and float(opposite_entry) > entry_price:
                 sl_price = float(opposite_entry)
                 zone_name = 'Opposite BuyStop entry (mirror SL)'
@@ -641,12 +641,12 @@ class Strategy:
             if risk < min_risk:
                 sl_price = entry_price + min_risk
                 risk = min_risk
-                zone_name = 'Min H1 ATR risk floor'
+                zone_name = 'Min M1 ATR risk floor'
 
             named = [
-                ('H1 Support OB', _f(last_h1, 'support', 0)),
-                ('H1 Swing Low', _f(last_h1, 'last_low', 0)),
-                ('H1 MTF Demand', _f(last_h1, 'mtf_sup_zone', 0)),
+                ('M1 Support OB', _f(last_h1, 'support', 0)),
+                ('M1 Swing Low', _f(last_h1, 'last_low', 0)),
+                ('M1 MTF Demand', _f(last_h1, 'mtf_sup_zone', 0)),
                 ('M5 Support', _f(last_m5, 'support', 0)),
                 ('Gann 90', _f(last_h1, 'gann_sq9_90_dn', 0)),
                 ('Gann 180', _f(last_h1, 'gann_sq9_180_dn', 0)),
@@ -658,7 +658,7 @@ class Strategy:
                 ('Pivot S2', _f(last_m5, 'pivot_s2', 0)),
                 ('Fib 000', _f(last_h1, 'fib_000', 0)),
             ]
-            for lvl in _hist_levels([h1_df, m5_df], ['swing_low', 'mtf_sup_zone', 'support', 'last_low']):
+            for lvl in _hist_levels([m1_df, m5_df], ['swing_low', 'mtf_sup_zone', 'support', 'last_low']):
                 named.append(('Hist Demand', lvl))
 
             rmax = _f(last_m5, 'range_max', _f(last_h1, 'range_max', entry_price + h1_atr * 2))
@@ -699,23 +699,23 @@ class Strategy:
             tp1, tp2 = sell_tps[0], sell_tps[1]
             tp1_note, tp2_note = sell_notes[0], sell_notes[1]
 
-            # TP2 = Strictly H1 SMC Structure Zone (H1 Swing Low, H1 Sup, H1 MTF) with H1 ATR Minimum Gap ($15.0+ points)
+            # TP2 = Strictly M1 SMC Structure Zone (M1 Swing Low, M1 Sup, M1 MTF) with M1 ATR Minimum Gap ($15.0+ points)
             h1_mtf_res = _f(last_h1, 'mtf_res_zone', entry_price + h1_atr * 3)
             h1_mtf_sup = _f(last_h1, 'mtf_sup_zone', entry_price)
             mtf_span = max(abs(h1_mtf_res - h1_mtf_sup), h1_atr * 3.0, range_h, risk * 1.2)
 
             mtf2_named = [
-                ('H1 MTF Sup', h1_mtf_sup),
-                ('H1 Support OB', _f(last_h1, 'support', 0)),
-                ('H1 Swing Low', _f(last_h1, 'last_low', 0)),
-                ('H1 Next Sup Zone', entry_price - mtf_span),
+                ('M1 MTF Sup', h1_mtf_sup),
+                ('M1 Support OB', _f(last_h1, 'support', 0)),
+                ('M1 Swing Low', _f(last_h1, 'last_low', 0)),
+                ('M1 Next Sup Zone', entry_price - mtf_span),
             ]
-            if h1_df is not None and len(h1_df) > 0:
-                if 'swing_low' in h1_df.columns:
-                    for v in h1_df['swing_low'].dropna().tail(40).tolist():
-                        mtf2_named.append(('H1 Hist Swing Low', float(v)))
-                for lvl in _hist_levels([h1_df], ['mtf_sup_zone', 'support', 'last_low']):
-                    mtf2_named.append(('H1 Hist Sup', lvl))
+            if m1_df is not None and len(m1_df) > 0:
+                if 'swing_low' in m1_df.columns:
+                    for v in m1_df['swing_low'].dropna().tail(40).tolist():
+                        mtf2_named.append(('M1 Hist Swing Low', float(v)))
+                for lvl in _hist_levels([m1_df], ['mtf_sup_zone', 'support', 'last_low']):
+                    mtf2_named.append(('M1 Hist Sup', lvl))
 
             max_tp2 = min(tp1 - max(h1_atr * 1.5, 15.0 if is_gold else 0.0015), entry_price - mtf_span * 0.75)
             mtf2_ok = [(n, round(z, 2)) for n, z in mtf2_named if 0 < z <= max_tp2]
@@ -725,13 +725,13 @@ class Strategy:
                 tp2_note = f"{tp2_n}@{tp2:.2f}"
             else:
                 tp2 = round(max_tp2, 2)
-                tp2_note = f"H1 Measured Sup@{tp2:.2f}"
+                tp2_note = f"M1 Measured Sup@{tp2:.2f}"
             tp2 = min(float(tp2), max_tp2)
 
             # TP3 = FAR next major reversal zone
             import math
             sq = math.sqrt(max(entry_price, 1.0))
-            hist_lows = _hist_levels([h1_df], ['swing_low', 'support', 'last_low'])
+            hist_lows = _hist_levels([m1_df], ['swing_low', 'support', 'last_low'])
             major_low = min(hist_lows) if hist_lows else 0.0
             far_named = [
                 ('Fib 2.618 Ext', rmax - range_h * 2.618),
@@ -764,7 +764,7 @@ class Strategy:
         digits = 2 if is_gold else 5
         return round(sl_price, digits), round(tp1, digits), round(tp2, digits), round(tp3, digits)
 
-    # ─── SMC_PMAX_RECOVERY helpers (H1 zones outside; M5 PMAX+HalfTrend gates) ───
+    # ─── SMC_PMAX_RECOVERY helpers (M1 zones outside; M5 PMAX+HalfTrend gates) ───
 
     @staticmethod
     def _smc_f(row, key, default=0.0):
@@ -775,8 +775,8 @@ class Strategy:
             return float(default)
 
     @staticmethod
-    def zone_edge_buffer(h1_df, broker_stops=0.0):
-        last = h1_df.iloc[-1] if (h1_df is not None and len(h1_df) > 0) else {}
+    def zone_edge_buffer(m1_df, broker_stops=0.0):
+        last = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else {}
         atr = Strategy._smc_f(last, 'atr', 5.0)
         frac = float(getattr(config, 'SMC_ZONE_EDGE_ATR_FRAC', 0.15))
         is_gold = "XAU" in str(config.SYMBOL).upper()
@@ -801,16 +801,16 @@ class Strategy:
         return not (zl - eps <= p <= zh + eps)
 
     @staticmethod
-    def get_validated_breakout_levels(h1_df, curr_ask, curr_bid, broker_stops=0.0):
+    def get_validated_breakout_levels(m1_df, curr_ask, curr_bid, broker_stops=0.0):
         """
-        H1-only validated resistance/support OUTSIDE zone edges.
+        M1-only validated resistance/support OUTSIDE zone edges.
         Rejects inducement/invalid highs/lows when valid_* is available.
         """
         is_gold = "XAU" in str(config.SYMBOL).upper()
         digits = 2 if is_gold else 5
         ask, bid = float(curr_ask), float(curr_bid)
-        buf = Strategy.zone_edge_buffer(h1_df, broker_stops)
-        last = h1_df.iloc[-1] if (h1_df is not None and len(h1_df) > 0) else {}
+        buf = Strategy.zone_edge_buffer(m1_df, broker_stops)
+        last = m1_df.iloc[-1] if (m1_df is not None and len(m1_df) > 0) else {}
 
         vh = Strategy._smc_f(last, 'valid_high', 0.0)
         vl = Strategy._smc_f(last, 'valid_low', 0.0)
@@ -938,15 +938,15 @@ class Strategy:
         return Strategy.m5_pmax_halftrend_status(m5_df).get("dual", "MIXED")
 
     @staticmethod
-    def m5_hit_confirm_status(h1_df, m5_df):
+    def m5_hit_confirm_status(m1_df, m5_df):
         """C1 (PMAX) + C2 (HalfTrend) + C3 (Closed Candle) reading for UI and hit-check."""
         out = dict(Strategy.m5_pmax_halftrend_status(m5_df))
-        h1_closed = bool(getattr(config, "H1_CONFIRM_CLOSED", True))
+        h1_closed = bool(getattr(config, "M1_CONFIRM_CLOSED", True))
         m5_closed = bool(getattr(config, "M5_CONFIRM_CLOSED", True))
-        h1c = tf_latest_reading(h1_df, closed_only=h1_closed)
+        h1c = tf_latest_reading(m1_df, closed_only=h1_closed)
         m5c = tf_latest_reading(m5_df, closed_only=m5_closed)
-        buy_g = h1_m5_pattern_gate(h1_df, m5_df, "BUY", h1_closed_only=h1_closed, m5_closed_only=m5_closed)
-        sell_g = h1_m5_pattern_gate(h1_df, m5_df, "SELL", h1_closed_only=h1_closed, m5_closed_only=m5_closed)
+        buy_g = h1_m5_pattern_gate(m1_df, m5_df, "BUY", h1_closed_only=h1_closed, m5_closed_only=m5_closed)
+        sell_g = h1_m5_pattern_gate(m1_df, m5_df, "SELL", h1_closed_only=h1_closed, m5_closed_only=m5_closed)
         candle = m5c.get("bias") or "NONE"
         out["candle"] = candle
         out["c3"] = candle
@@ -967,10 +967,10 @@ class Strategy:
         return out
 
     @staticmethod
-    def entry_is_outside_zones(h1_df, price, curr_ask, curr_bid, side="BUY", broker_stops=0.0, require_breakout=False):
-        """True when price is not inside H1 supply/demand zone body.
+    def entry_is_outside_zones(m1_df, price, curr_ask, curr_bid, side="BUY", broker_stops=0.0, require_breakout=False):
+        """True when price is not inside M1 supply/demand zone body.
         require_breakout=True (stops): BUY above supply high, SELL below demand low."""
-        lvls = Strategy.get_validated_breakout_levels(h1_df, curr_ask, curr_bid, broker_stops)
+        lvls = Strategy.get_validated_breakout_levels(m1_df, curr_ask, curr_bid, broker_stops)
         res = lvls.get("res_zone") or (0.0, 0.0)
         sup = lvls.get("sup_zone") or (0.0, 0.0)
         p = float(price)
@@ -988,13 +988,13 @@ class Strategy:
         return True, "outside zone"
 
     @staticmethod
-    def should_confirm_or_modify_stop(side, price, stop_price, h1_df, m5_df, broker_stops=0.0):
+    def should_confirm_or_modify_stop(side, price, stop_price, m1_df, m5_df, broker_stops=0.0):
         """
         Near-hit: fill only if PMAX + HalfTrend + candle pattern ALL agree on this side.
         Far from stop → KEEP (pending stays parked).
         Near stop:
-          BUY:  PMAX BUY AND HalfTrend BUY AND M5 bullish/continuation (H1 not bearish)
-          SELL: PMAX SELL AND HalfTrend SELL AND M5 bearish/continuation (H1 not bullish)
+          BUY:  PMAX BUY AND HalfTrend BUY AND M5 bullish/continuation (M1 not bearish)
+          SELL: PMAX SELL AND HalfTrend SELL AND M5 bearish/continuation (M1 not bullish)
           Else → MODIFY farther outside zone so it cannot fill.
         """
         st = Strategy.m5_pmax_halftrend_status(m5_df)
@@ -1003,10 +1003,10 @@ class Strategy:
         ht = st.get("halftrend") or "FLAT"
         side_u = str(side).upper()
         want = 'BUY' if 'BUY' in side_u else 'SELL'
-        atr = Strategy._smc_f(h1_df.iloc[-1] if len(h1_df) else {}, 'atr', 5.0)
+        atr = Strategy._smc_f(m1_df.iloc[-1] if len(m1_df) else {}, 'atr', 5.0)
         approach = max(atr * float(getattr(config, 'SMC_APPROACH_ATR_FRAC', 0.5)), float(broker_stops or 0), 1.0)
         dist = abs(float(price) - float(stop_price))
-        candle = h1_m5_pattern_gate(h1_df, m5_df, want)
+        candle = h1_m5_pattern_gate(m1_df, m5_df, want)
         extra = {
             "pmax": pmax,
             "halftrend": ht,
@@ -1024,7 +1024,7 @@ class Strategy:
         if dist > approach:
             return {"action": "KEEP", "new_price": float(stop_price), **extra}
 
-        lvls2 = Strategy.get_validated_breakout_levels(h1_df, float(price), float(price), broker_stops)
+        lvls2 = Strategy.get_validated_breakout_levels(m1_df, float(price), float(price), broker_stops)
         buf = float(lvls2.get("buffer") or 1.0)
         new_p = float(lvls2['buy_stop'] if want == 'BUY' else lvls2['sell_stop'])
         if want == 'BUY':
@@ -1412,17 +1412,17 @@ class Strategy:
         return df
 
     @staticmethod
-    def generate_signal(h1_df, m15_df, m5_df):
+    def generate_signal(m1_df, m15_df, m5_df):
         """
         Smart Money Concepts (SMC) High Win-Rate Execution:
-        1. Higher Timeframe (H1 + M15): Structural Bias (Bullish/Bearish BOS & Market Structure).
+        1. Higher Timeframe (M1 + M15): Structural Bias (Bullish/Bearish BOS & Market Structure).
         2. Lower Timeframe (M5): Order Block Sweep + Fair Value Gap (FVG) + Institutional Volume Spike.
         """
-        h1_df = Strategy.calculate_indicators(h1_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
         m15_df = Strategy.calculate_indicators(m15_df)
         m5_df = Strategy.calculate_indicators(m5_df)
 
-        last_h1 = h1_df.iloc[-1]
+        last_h1 = m1_df.iloc[-1]
         last_m15 = m15_df.iloc[-1]
         last_m5 = m5_df.iloc[-1]
         prev_m5 = m5_df.iloc[-2]
@@ -1540,15 +1540,15 @@ class Strategy:
 
 
     @staticmethod
-    def get_waiting_reason(h1_df, m15_df, m5_df):
+    def get_waiting_reason(m1_df, m15_df, m5_df):
         """
         Human-readable SMC confirmation status showing exact missing rules and what bot is waiting for.
         """
-        h1_df = Strategy.calculate_indicators(h1_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
         m15_df = Strategy.calculate_indicators(m15_df)
         m5_df = Strategy.calculate_indicators(m5_df)
 
-        last_h1 = h1_df.iloc[-1]
+        last_h1 = m1_df.iloc[-1]
         last_m15 = m15_df.iloc[-1]
         last_m5 = m5_df.iloc[-1]
 
@@ -1593,14 +1593,14 @@ class Strategy:
         return "⏳ Monitoring quad-timeframe alignment..."
 
     @staticmethod
-    def check_upcoming_forecast(h1_df, m15_df, m5_df):
+    def check_upcoming_forecast(m1_df, m15_df, m5_df):
         """
         Smart Money Concepts Forecast Detection.
         """
-        h1_df = Strategy.calculate_indicators(h1_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
         m5_df = Strategy.calculate_indicators(m5_df)
 
-        last_h1 = h1_df.iloc[-1]
+        last_h1 = m1_df.iloc[-1]
         last_m5 = m5_df.iloc[-1]
 
         h1_lh = last_h1['last_high'] if pd.notna(last_h1['last_high']) and last_h1['last_high'] is not None else last_h1['close']
@@ -1618,15 +1618,15 @@ class Strategy:
         return {"has_forecast": False, "signal": None, "symbol": config.SYMBOL}
 
     @staticmethod
-    def get_checklist_status(h1_df, m15_df, m5_df):
+    def get_checklist_status(m1_df, m15_df, m5_df):
         """
         Calculates exact status for 8 Comprehensive SMC Strategy Rules (Matched / Pending).
         """
-        h1_df = Strategy.calculate_indicators(h1_df)
+        m1_df = Strategy.calculate_indicators(m1_df)
         m15_df = Strategy.calculate_indicators(m15_df)
         m5_df = Strategy.calculate_indicators(m5_df)
 
-        last_h1 = h1_df.iloc[-1]
+        last_h1 = m1_df.iloc[-1]
         last_m15 = m15_df.iloc[-1]
         last_m5 = m5_df.iloc[-1]
 
@@ -1650,7 +1650,7 @@ class Strategy:
 
         vol_spike = bool(last_m5['vol_spike'])
         
-        # Dual Timeframe (M5 & H1) SMC Zone Alignment
+        # Dual Timeframe (M5 & M1) SMC Zone Alignment
         is_discount = bool(last_m5['is_discount'] or (last_h1 is not None and last_h1.get('is_discount', False)))
         is_premium = bool(last_m5['is_premium'] or (last_h1 is not None and last_h1.get('is_premium', False)))
         eq_price = round(float(last_m5['equilibrium']), 2) if pd.notna(last_m5['equilibrium']) else round(float(last_m5['close']), 2)
@@ -1696,8 +1696,8 @@ class Strategy:
         # Take Profit (TP) is strictly anchored at the opposite SMC Supply Block / Liquidity Sweep Zone / Resistance Target.
         
         # UNIFIED SINGLE SL ENGINE (Strictly identical SL for all BUY/BUY_STOP and SELL/SELL_STOP orders):
-        # 1. ALL BUY & BUY_STOP orders share the SINGLE SL below H1 Valid Swing Low / Demand Zone
-        # 2. ALL SELL & SELL_STOP orders share the SINGLE SL above H1 Valid Swing High / Supply Zone
+        # 1. ALL BUY & BUY_STOP orders share the SINGLE SL below M1 Valid Swing Low / Demand Zone
+        # 2. ALL SELL & SELL_STOP orders share the SINGLE SL above M1 Valid Swing High / Supply Zone
         h1_atr_val = float(last_h1['atr']) if pd.notna(last_h1['atr']) else 5.0
         sl_buf_unified = max(h1_atr_val * 0.30, 2.0 if "XAU" in config.SYMBOL else h1_atr_val * 0.30)
 
@@ -1720,10 +1720,10 @@ class Strategy:
         buy_checklist = [
             {
                 "id": "buy_h1_struct",
-                "name": "1. H1 Bullish Structure Bias (BOS)",
+                "name": "1. M1 Bullish Structure Bias (BOS)",
                 "category": "🔴 MAIN MANDATORY",
                 "matched": bool(h1_bullish),
-                "detail": f"H1: {'BULLISH (BOS) ✅' if h1_bullish else 'WAITING H1 BULLISH BOS ⏳'}",
+                "detail": f"M1: {'BULLISH (BOS) ✅' if h1_bullish else 'WAITING M1 BULLISH BOS ⏳'}",
                 "target_info": f"High Breakout Target: ${h1_lh:.2f}"
             },
             {
@@ -1792,20 +1792,20 @@ class Strategy:
             },
             {
                 "id": "buy_gann_sq9_rule",
-                "name": "10. Gann_SQ9_2 W.D. Gann Square of 9 H1 Matrix Confluence",
+                "name": "10. Gann_SQ9_2 W.D. Gann Square of 9 M1 Matrix Confluence",
                 "category": "🔴 MAIN MANDATORY",
                 "matched": bool(pd.notna(last_h1.get('gann_sq9_90_dn')) and curr_price >= last_h1.get('gann_sq9_90_dn', 0)),
-                "detail": f"Gann SQ9 Matrix (H1): {'ABOVE GANN 90-DEGREE H1 SUPPORT MATRIX ✅' if (pd.notna(last_h1.get('gann_sq9_90_dn')) and curr_price >= last_h1.get('gann_sq9_90_dn', 0)) else 'WAITING H1 GANN MATRIX ⏳'}",
-                "target_info": f"Gann 90° Level (H1): ${last_h1.get('gann_sq9_90_dn', 0):.2f}"
+                "detail": f"Gann SQ9 Matrix (M1): {'ABOVE GANN 90-DEGREE M1 SUPPORT MATRIX ✅' if (pd.notna(last_h1.get('gann_sq9_90_dn')) and curr_price >= last_h1.get('gann_sq9_90_dn', 0)) else 'WAITING M1 GANN MATRIX ⏳'}",
+                "target_info": f"Gann 90° Level (M1): ${last_h1.get('gann_sq9_90_dn', 0):.2f}"
             },
 
             {
                 "id": "buy_xps_fib_rule",
-                "name": "11. !XPS AUTO FIB.ex4 H1 Golden Zone Retest (38.2% - 61.8%)",
+                "name": "11. !XPS AUTO FIB.ex4 M1 Golden Zone Retest (38.2% - 61.8%)",
                 "category": "🔴 MAIN MANDATORY",
                 "matched": bool(last_h1.get('fib_golden_zone_buy', False) or (pd.notna(last_h1.get('fib_382')) and curr_price >= last_h1.get('fib_382', 0) and curr_price <= last_h1.get('fib_618', 999999))),
-                "detail": f"!XPS AUTO FIB (H1): {'AT H1 GOLDEN RETRACEMENT ZONE (38.2% - 61.8%) ✅' if (last_h1.get('fib_golden_zone_buy', False) or (pd.notna(last_h1.get('fib_382')) and curr_price >= last_h1.get('fib_382', 0) and curr_price <= last_h1.get('fib_618', 999999))) else 'WAITING H1 FIB GOLDEN RETRACEMENT ⏳'}",
-                "target_info": "H1 Golden Zone Retracement (38.2% - 61.8%)"
+                "detail": f"!XPS AUTO FIB (M1): {'AT M1 GOLDEN RETRACEMENT ZONE (38.2% - 61.8%) ✅' if (last_h1.get('fib_golden_zone_buy', False) or (pd.notna(last_h1.get('fib_382')) and curr_price >= last_h1.get('fib_382', 0) and curr_price <= last_h1.get('fib_618', 999999))) else 'WAITING M1 FIB GOLDEN RETRACEMENT ⏳'}",
+                "target_info": "M1 Golden Zone Retracement (38.2% - 61.8%)"
             },
 
 
@@ -1828,26 +1828,26 @@ class Strategy:
             },
             {
                 "id": "buy_fvg",
-                "name": "14. Fair Value Gap (FVG) Retest (M5 / H1)",
+                "name": "14. Fair Value Gap (FVG) Retest (M5 / M1)",
                 "category": "🟡 CORE ZONE",
                 "matched": bool(fvg_bullish_mtf),
-                "detail": f"FVG Zone: {'BULLISH FVG ACTIVE (M5/H1) ✅' if fvg_bullish_mtf else 'WAITING BULLISH FVG ⏳'}",
+                "detail": f"FVG Zone: {'BULLISH FVG ACTIVE (M5/M1) ✅' if fvg_bullish_mtf else 'WAITING BULLISH FVG ⏳'}",
                 "target_info": f"FVG Imbalance Area: ~${curr_price:.2f}"
             },
             {
                 "id": "buy_ob",
-                "name": "15. Institutional Order Block (OB) Sweep (M5 / H1)",
+                "name": "15. Institutional Order Block (OB) Sweep (M5 / M1)",
                 "category": "🟡 CORE ZONE",
                 "matched": bool(ob_bullish_mtf),
-                "detail": f"OB Zone: {'BULLISH ORDER BLOCK ACTIVE (M5/H1) ✅' if ob_bullish_mtf else 'WAITING BULLISH OB ⏳'}",
+                "detail": f"OB Zone: {'BULLISH ORDER BLOCK ACTIVE (M5/M1) ✅' if ob_bullish_mtf else 'WAITING BULLISH OB ⏳'}",
                 "target_info": f"Demand Area: ~${curr_price:.2f}"
             },
             {
                 "id": "buy_breaker_mit",
-                "name": "16. Breaker / Mitigation Block Retest (M5 / H1)",
+                "name": "16. Breaker / Mitigation Block Retest (M5 / M1)",
                 "category": "🟡 CORE ZONE",
                 "matched": bool(breaker_bullish_mtf),
-                "detail": f"Block: {'BREAKER / MITIGATION BLOCK ACTIVE (M5/H1) ✅' if breaker_bullish_mtf else 'WAITING BULLISH BREAKER ⏳'}",
+                "detail": f"Block: {'BREAKER / MITIGATION BLOCK ACTIVE (M5/M1) ✅' if breaker_bullish_mtf else 'WAITING BULLISH BREAKER ⏳'}",
                 "target_info": "Institutional Order Mitigation"
             },
 
@@ -1898,10 +1898,10 @@ class Strategy:
         sell_checklist = [
             {
                 "id": "sell_h1_struct",
-                "name": "1. H1 Bearish Structure Bias (CHoCH)",
+                "name": "1. M1 Bearish Structure Bias (CHoCH)",
                 "category": "🔴 MAIN MANDATORY",
                 "matched": bool(h1_bearish),
-                "detail": f"H1: {'BEARISH (CHoCH) ✅' if h1_bearish else 'WAITING H1 BEARISH CHoCH ⏳'}",
+                "detail": f"M1: {'BEARISH (CHoCH) ✅' if h1_bearish else 'WAITING M1 BEARISH CHoCH ⏳'}",
                 "target_info": f"Low Breakdown Target: ${h1_ll:.2f}"
             },
             {
@@ -1970,20 +1970,20 @@ class Strategy:
             },
             {
                 "id": "sell_gann_sq9_rule",
-                "name": "10. Gann_SQ9_2 W.D. Gann Square of 9 H1 Matrix Confluence",
+                "name": "10. Gann_SQ9_2 W.D. Gann Square of 9 M1 Matrix Confluence",
                 "category": "🔴 MAIN MANDATORY",
                 "matched": bool(pd.notna(last_h1.get('gann_sq9_90_up')) and curr_price <= last_h1.get('gann_sq9_90_up', 999999)),
-                "detail": f"Gann SQ9 Matrix (H1): {'BELOW GANN 90-DEGREE H1 RESISTANCE MATRIX ✅' if (pd.notna(last_h1.get('gann_sq9_90_up')) and curr_price <= last_h1.get('gann_sq9_90_up', 999999)) else 'WAITING H1 GANN MATRIX ⏳'}",
-                "target_info": f"Gann 90° Level (H1): ${last_h1.get('gann_sq9_90_up', 0):.2f}"
+                "detail": f"Gann SQ9 Matrix (M1): {'BELOW GANN 90-DEGREE M1 RESISTANCE MATRIX ✅' if (pd.notna(last_h1.get('gann_sq9_90_up')) and curr_price <= last_h1.get('gann_sq9_90_up', 999999)) else 'WAITING M1 GANN MATRIX ⏳'}",
+                "target_info": f"Gann 90° Level (M1): ${last_h1.get('gann_sq9_90_up', 0):.2f}"
             },
 
             {
                 "id": "sell_xps_fib_rule",
-                "name": "11. !XPS AUTO FIB.ex4 H1 Golden Zone Retest (38.2% - 61.8%)",
+                "name": "11. !XPS AUTO FIB.ex4 M1 Golden Zone Retest (38.2% - 61.8%)",
                 "category": "🔴 MAIN MANDATORY",
                 "matched": bool(last_h1.get('fib_golden_zone_sell', False) or (pd.notna(last_h1.get('fib_382')) and curr_price >= last_h1.get('fib_382', 0) and curr_price <= last_h1.get('fib_618', 999999))),
-                "detail": f"!XPS AUTO FIB (H1): {'AT H1 GOLDEN RETRACEMENT ZONE (38.2% - 61.8%) ✅' if (last_h1.get('fib_golden_zone_sell', False) or (pd.notna(last_h1.get('fib_382')) and curr_price >= last_h1.get('fib_382', 0) and curr_price <= last_h1.get('fib_618', 999999))) else 'WAITING H1 FIB GOLDEN RETRACEMENT ⏳'}",
-                "target_info": "H1 Golden Zone Retracement (38.2% - 61.8%)"
+                "detail": f"!XPS AUTO FIB (M1): {'AT M1 GOLDEN RETRACEMENT ZONE (38.2% - 61.8%) ✅' if (last_h1.get('fib_golden_zone_sell', False) or (pd.notna(last_h1.get('fib_382')) and curr_price >= last_h1.get('fib_382', 0) and curr_price <= last_h1.get('fib_618', 999999))) else 'WAITING M1 FIB GOLDEN RETRACEMENT ⏳'}",
+                "target_info": "M1 Golden Zone Retracement (38.2% - 61.8%)"
             },
             {
                 "id": "sell_premium_res",
@@ -2004,26 +2004,26 @@ class Strategy:
             },
             {
                 "id": "sell_fvg",
-                "name": "14. Fair Value Gap (FVG) Retest (M5 / H1)",
+                "name": "14. Fair Value Gap (FVG) Retest (M5 / M1)",
                 "category": "🟡 CORE ZONE",
                 "matched": bool(fvg_bearish_mtf),
-                "detail": f"FVG Zone: {'BEARISH FVG ACTIVE (M5/H1) ✅' if fvg_bearish_mtf else 'WAITING BEARISH FVG ⏳'}",
+                "detail": f"FVG Zone: {'BEARISH FVG ACTIVE (M5/M1) ✅' if fvg_bearish_mtf else 'WAITING BEARISH FVG ⏳'}",
                 "target_info": f"FVG Imbalance Area: ~${curr_price:.2f}"
             },
             {
                 "id": "sell_ob",
-                "name": "15. Institutional Order Block (OB) Sweep (M5 / H1)",
+                "name": "15. Institutional Order Block (OB) Sweep (M5 / M1)",
                 "category": "🟡 CORE ZONE",
                 "matched": bool(ob_bearish_mtf),
-                "detail": f"OB Zone: {'BEARISH ORDER BLOCK ACTIVE (M5/H1) ✅' if ob_bearish_mtf else 'WAITING BEARISH OB ⏳'}",
+                "detail": f"OB Zone: {'BEARISH ORDER BLOCK ACTIVE (M5/M1) ✅' if ob_bearish_mtf else 'WAITING BEARISH OB ⏳'}",
                 "target_info": f"Supply Area: ~${curr_price:.2f}"
             },
             {
                 "id": "sell_breaker_mit",
-                "name": "16. Breaker / Mitigation Block Retest (M5 / H1)",
+                "name": "16. Breaker / Mitigation Block Retest (M5 / M1)",
                 "category": "🟡 CORE ZONE",
                 "matched": bool(breaker_bearish_mtf),
-                "detail": f"Block: {'BEARISH BREAKER / MITIGATION BLOCK ACTIVE (M5/H1) ✅' if breaker_bearish_mtf else 'WAITING BEARISH BREAKER ⏳'}",
+                "detail": f"Block: {'BEARISH BREAKER / MITIGATION BLOCK ACTIVE (M5/M1) ✅' if breaker_bearish_mtf else 'WAITING BEARISH BREAKER ⏳'}",
                 "target_info": "Institutional Order Mitigation"
             },
 

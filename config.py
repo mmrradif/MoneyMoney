@@ -33,8 +33,8 @@ ENABLE_REGULAR_ENGINE = False       # Regular Order Engine
 PENDING_MODE = "PMAX_RECOVERY"     # 3-step no-loss: H1 valid stops outside zone + M5 C1/C2 gates
 
 # Lot sizes
-PENDING_BASE_LOT = 0.05            # Pending engine base lot (default 0.02)
-REGULAR_BASE_LOT = 0.05            # Regular engine base lot (default 0.02)
+PENDING_BASE_LOT = 0.06            # Pending engine base lot (default 0.02)
+REGULAR_BASE_LOT = 0.06            # Regular engine base lot (default 0.02)
 PENDING_MAX_LOT = 0.80             # Cap pending martingale
 
 # PMAX_RECOVERY — unlimited 0-loss steps; Step2 keeps 1 runner; Step3+ flatten all
