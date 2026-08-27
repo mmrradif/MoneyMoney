@@ -2,7 +2,7 @@
 title MoneyMoney Executable Builder
 cls
 echo ========================================================
-echo       💰 MONEY MAKER EXE BUILDER (NO CODE SHARE) 💰
+echo       💰 MONEYMONEY EXE BUILDER (NO CODE SHARE) 💰
 echo ========================================================
 echo.
 echo [1/3] Terminating any active MoneyMoney background processes...
