@@ -1,6 +1,6 @@
-# Money Maker Bot — Full Details
+# MoneyMoney Bot — Full Details
 
-Complete documentation of the current **Money Maker** MT5 automated trading system (as implemented in this repo).
+Complete documentation of the current **MoneyMoney** MT5 automated trading system (as implemented in this repo).
 
 ---
 

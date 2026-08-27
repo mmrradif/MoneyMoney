@@ -357,7 +357,7 @@ class MT5Interface:
             positions = mt5.positions_get()
         return positions if positions else []
 
-    def open_order(self, symbol, order_type, lot_size, sl_price, tp_price, magic=100888):
+    def open_order(self, symbol, order_type, lot_size, sl_price, tp_price, magic=100988):
         """Executes a market order with SL and TP (supports suffix symbols & Market Execution 2-step SL/TP)"""
         matched_symbol = None
         for sym in [symbol, symbol + 'm', symbol + 'c', symbol + 'k', symbol + '_i', 'XAUUSDm']:
@@ -413,7 +413,7 @@ class MT5Interface:
             "tp": req_tp,
             "deviation": 20,
             "magic": magic,
-            "comment": "Antigravity Smart EA" if magic == 100888 else "Manual Dashboard Order",
+            "comment": "Antigravity Smart EA" if magic == 100988 else "Manual Dashboard Order",
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": filling_type,
         }
@@ -469,7 +469,7 @@ class MT5Interface:
         logging.info(f"ORDER PLACED SUCCESSFULLY! Ticket: #{result.order}, Type: {'BUY' if order_type == mt5.ORDER_TYPE_BUY else 'SELL'}, Volume: {lot_size}, Price: {price}, SL: {req_sl}, TP: {req_tp}")
         return result
 
-    def place_pending_order(self, symbol, order_type_str, lot_size, trigger_price, sl_price, tp_price, magic=100888):
+    def place_pending_order(self, symbol, order_type_str, lot_size, trigger_price, sl_price, tp_price, magic=100988):
         """Places a pending BUY_STOP or SELL_STOP order with SL and TP"""
         matched_symbol = None
         for sym in [symbol + 'm', 'XAUUSDm', symbol, symbol + 'c', symbol + 'k', symbol + '_i']:
@@ -493,12 +493,12 @@ class MT5Interface:
         order_type = order_type_map.get(order_type_str.upper(), mt5.ORDER_TYPE_BUY_STOP)
 
         comment_map = {
-            100894: "TP2 Mid",
-            100895: "TP2 Mid",
-            100890: "TP3 Reverse Stop",
-            100891: "TP3 Reverse Stop",
-            100892: "TP3 Runner",
-            100893: "TP3 Runner",
+            100994: "TP2 Mid",
+            100995: "TP2 Mid",
+            100990: "TP3 Reverse Stop",
+            100991: "TP3 Reverse Stop",
+            100992: "TP3 Runner",
+            100993: "TP3 Runner",
         }
         symbol_info = mt5.symbol_info(matched_symbol)
 

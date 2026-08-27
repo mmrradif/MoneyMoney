@@ -22,17 +22,17 @@ setup_daily_logger()
 
 # Global State for HTML Dashboard
 # Magic IDs: TP1 entry, TP2 mid (live-modified), TP3 runner (no broker TP-close), reverse stop glued to TP3 SL
-MAGIC_MAIN_BUY = 100888
-MAGIC_MAIN_SELL = 100889
-MAGIC_REV_SELL = 100890   # SellStop at Buy TP3 SL
-MAGIC_REV_BUY = 100891    # BuyStop at Sell TP3 SL
-MAGIC_TP3_BUY = 100892
-MAGIC_TP3_SELL = 100893
-MAGIC_TP2_BUY = 100894
-MAGIC_TP2_SELL = 100895
-MAGIC_BREAKOUT_BUY = 100896
-MAGIC_BREAKOUT_SELL = 100897
-ENTRY_BUY_MAGICS = (MAGIC_MAIN_BUY, MAGIC_TP2_BUY, MAGIC_TP3_BUY, MAGIC_BREAKOUT_BUY, 100898, 100899)
+MAGIC_MAIN_BUY = 100988
+MAGIC_MAIN_SELL = 100989
+MAGIC_REV_SELL = 100990   # SellStop at Buy TP3 SL
+MAGIC_REV_BUY = 100991    # BuyStop at Sell TP3 SL
+MAGIC_TP3_BUY = 100992
+MAGIC_TP3_SELL = 100993
+MAGIC_TP2_BUY = 100994
+MAGIC_TP2_SELL = 100995
+MAGIC_BREAKOUT_BUY = 100996
+MAGIC_BREAKOUT_SELL = 100997
+ENTRY_BUY_MAGICS = (MAGIC_MAIN_BUY, MAGIC_TP2_BUY, MAGIC_TP3_BUY, MAGIC_BREAKOUT_BUY, 100998, 100999)
 ENTRY_SELL_MAGICS = (MAGIC_MAIN_SELL, MAGIC_TP2_SELL, MAGIC_TP3_SELL, MAGIC_BREAKOUT_SELL, 100900, 100901)
 TP3_MAGICS = (MAGIC_TP3_BUY, MAGIC_TP3_SELL)
 TP2_MAGICS = (MAGIC_TP2_BUY, MAGIC_TP2_SELL)
@@ -788,7 +788,7 @@ def close_all():
                 "position": ticket,
                 "price": close_price,
                 "deviation": 20,
-                "magic": getattr(config, 'MAGIC_NUMBER', 100888),
+                "magic": getattr(config, 'MAGIC_NUMBER', 100988),
                 "comment": "Manual Close All",
                 "type_time": mt5.ORDER_TIME_GTC,
                 "type_filling": mt5.ORDER_FILLING_IOC,
@@ -841,7 +841,7 @@ def close_single():
             "position": ticket,
             "price": close_price,
             "deviation": 20,
-            "magic": getattr(config, 'MAGIC_NUMBER', 100888),
+            "magic": getattr(config, 'MAGIC_NUMBER', 100988),
             "comment": f"Manual Close Single #{ticket}",
             "type_time": mt5.ORDER_TIME_GTC,
             "type_filling": mt5.ORDER_FILLING_IOC,
@@ -887,7 +887,7 @@ def close_buys():
                     "position": ticket,
                     "price": close_price,
                     "deviation": 20,
-                    "magic": getattr(config, 'MAGIC_NUMBER', 100888),
+                    "magic": getattr(config, 'MAGIC_NUMBER', 100988),
                     "comment": "Manual Close BUYs",
                     "type_time": mt5.ORDER_TIME_GTC,
                     "type_filling": mt5.ORDER_FILLING_IOC,
@@ -932,7 +932,7 @@ def close_sells():
                     "position": ticket,
                     "price": close_price,
                     "deviation": 20,
-                    "magic": getattr(config, 'MAGIC_NUMBER', 100888),
+                    "magic": getattr(config, 'MAGIC_NUMBER', 100988),
                     "comment": "Manual Close SELLs",
                     "type_time": mt5.ORDER_TIME_GTC,
                     "type_filling": mt5.ORDER_FILLING_IOC,
@@ -1195,7 +1195,7 @@ def manage_open_positions(mt5_client, h1_rates=None, m15_rates=None, m5_rates=No
         acc_info = mt5_client.get_account_info()
         acc_balance = acc_info['balance'] if acc_info else getattr(config, 'INITIAL_BALANCE', 1000.0)
         # Floating PnL for bot caps — exclude isolated manual positions
-        bot_positions = [p for p in positions if not smc_recovery.is_manual_magic(getattr(p, "magic", 0)) and not smc_recovery.is_money_generator_magic(getattr(p, "magic", 0))]
+        bot_positions = [p for p in positions if int(getattr(p, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS]
         total_floating = sum([float(p.profit) + float(getattr(p, 'swap', 0)) for p in bot_positions])
         floating_pct = (total_floating / acc_balance) * 100.0 if acc_balance > 0 else 0.0
 
@@ -1322,7 +1322,7 @@ def manage_open_positions(mt5_client, h1_rates=None, m15_rates=None, m5_rates=No
             # SMC recovery engine owns SL/TP on its magics — do not auto-repair different zone TPs
             if (
                 pos_magic in smc_recovery.ALL_ENGINE_MAGICS
-                or smc_recovery.is_money_generator_magic(pos_magic)
+                
             ):
                 continue
 
@@ -1549,7 +1549,7 @@ def calculate_periodic_pnl():
         }
 
 def bot_loop():
-    add_log("Starting Money Maker Automated Trading Bot with Live Web Dashboard...")
+    add_log("Starting MoneyMoney Automated Trading Bot with Live Web Dashboard...")
     mt5_client = MT5Interface()
 
     while True:
@@ -1767,7 +1767,7 @@ def bot_loop():
                 smc_mode = getattr(config, 'PENDING_MODE', '').upper() in ('PMAX_RECOVERY', 'SMC_PMAX_RECOVERY')
                 for p in open_positions:
                     p_mag = int(getattr(p, 'magic', 0) or 0)
-                    if (smc_mode and p_mag in smc_recovery.ALL_ENGINE_MAGICS) or smc_recovery.is_money_generator_magic(p_mag):
+                    if (smc_mode and p_mag in smc_recovery.ALL_ENGINE_MAGICS) :
                         continue
                     is_tp3_pos = (p.ticket in tp3_tickets) or (int(getattr(p, 'magic', 0) or 0) in TP3_MAGICS)
                     p_sl = float(p.sl or 0)
@@ -1842,7 +1842,7 @@ def bot_loop():
                         orders = mt5.orders_get() or []
                         open_positions = mt5_client.get_open_positions() or []
                         
-                        # Purge legacy reverse-stop orders if any remain (magic 100890 / 100891)
+                        # Purge legacy reverse-stop orders if any remain (magic 100990 / 100991)
                         rev_orders = [o for o in orders if int(getattr(o, 'magic', 0) or 0) in REV_MAGICS]
                         for r_ord in rev_orders:
                             mt5.order_send({"action": mt5.TRADE_ACTION_REMOVE, "order": r_ord.ticket})
@@ -1872,11 +1872,11 @@ def bot_loop():
                         curr_bid = tick_now.bid if tick_now else last_m5['close']
 
                         has_active_buy = any(
-                            p.type == mt5.POSITION_TYPE_BUY and not smc_recovery.is_manual_magic(getattr(p, "magic", 0))
+                            p.type == mt5.POSITION_TYPE_BUY and int(getattr(p, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS
                             for p in open_positions
                         )
                         has_active_sell = any(
-                            p.type == mt5.POSITION_TYPE_SELL and not smc_recovery.is_manual_magic(getattr(p, "magic", 0))
+                            p.type == mt5.POSITION_TYPE_SELL and int(getattr(p, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS
                             for p in open_positions
                         )
 
@@ -1885,12 +1885,12 @@ def bot_loop():
 
                         active_buy_pos = next(
                             (p for p in open_positions
-                             if p.type == mt5.POSITION_TYPE_BUY and not smc_recovery.is_manual_magic(getattr(p, "magic", 0))),
+                             if p.type == mt5.POSITION_TYPE_BUY and int(getattr(p, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS),
                             None,
                         )
                         active_sell_pos = next(
                             (p for p in open_positions
-                             if p.type == mt5.POSITION_TYPE_SELL and not smc_recovery.is_manual_magic(getattr(p, "magic", 0))),
+                             if p.type == mt5.POSITION_TYPE_SELL and int(getattr(p, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS),
                             None,
                         )
 
@@ -1898,7 +1898,7 @@ def bot_loop():
                         smc_mode = getattr(config, 'PENDING_MODE', '').upper() in ('PMAX_RECOVERY', 'SMC_PMAX_RECOVERY')
                         for p in open_positions:
                             mag = int(getattr(p, 'magic', 0) or 0)
-                            if (smc_mode and mag in smc_recovery.ALL_ENGINE_MAGICS) or smc_recovery.is_money_generator_magic(mag):
+                            if (smc_mode and mag in smc_recovery.ALL_ENGINE_MAGICS) :
                                 continue
                             # Only touch true manual tickets for auto SL/TP fill
                             if not smc_recovery.is_manual_magic(mag) and mag != 0:
@@ -1920,7 +1920,7 @@ def bot_loop():
                         # Daily drawdown — bot positions only; never force-close isolated manual
                         acc_info = mt5.account_info()
                         curr_balance = acc_info.balance if acc_info else 1000.0
-                        bot_open = [p for p in open_positions if not smc_recovery.is_manual_magic(getattr(p, "magic", 0)) and not smc_recovery.is_money_generator_magic(getattr(p, "magic", 0))]
+                        bot_open = [p for p in open_positions if int(getattr(p, "magic", 0) or 0) in smc_recovery.ALL_ENGINE_MAGICS]
                         daily_drawdown_hit = trade_tracker.is_daily_drawdown_limit_reached(curr_balance, open_positions=bot_open)
 
                         if daily_drawdown_hit:
@@ -1997,7 +1997,7 @@ def bot_loop():
 
                         LIMIT_BUY_MAGICS = (MAGIC_MAIN_BUY, MAGIC_TP2_BUY, MAGIC_TP3_BUY)
                         LIMIT_SELL_MAGICS = (MAGIC_MAIN_SELL, MAGIC_TP2_SELL, MAGIC_TP3_SELL)
-                        STOP_BUY_MAGICS = (MAGIC_BREAKOUT_BUY, 100898, 100899)
+                        STOP_BUY_MAGICS = (MAGIC_BREAKOUT_BUY, 100998, 100999)
                         STOP_SELL_MAGICS = (MAGIC_BREAKOUT_SELL, 100900, 100901)
 
                         def _trim_dupes(orders, keep_magics):
@@ -2080,8 +2080,8 @@ def bot_loop():
 
                                 stop_buy_legs = (
                                     (MAGIC_BREAKOUT_BUY, b_stop_tp1),
-                                    (100898, b_stop_tp2),
-                                    (100899, b_stop_tp3),
+                                    (100998, b_stop_tp2),
+                                    (100999, b_stop_tp3),
                                 )
                                 stop_sell_legs = (
                                     (MAGIC_BREAKOUT_SELL, s_stop_tp1),
@@ -2186,8 +2186,8 @@ def bot_loop():
                                 )
                                 stop_buy_legs = (
                                     (MAGIC_BREAKOUT_BUY, b_stop_tp1),
-                                    (100898, b_stop_tp2),
-                                    (100899, b_stop_tp3),
+                                    (100998, b_stop_tp2),
+                                    (100999, b_stop_tp3),
                                 )
                                 if len(existing_buy_stops) < 3:
                                     n_buy += _fill_side(existing_buy_stops, breakout_buy_trig, b_stop_sl, stop_buy_legs, 'BUY_STOP')

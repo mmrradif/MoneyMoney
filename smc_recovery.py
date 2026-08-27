@@ -15,16 +15,16 @@ import config
 from strategy import Strategy
 from candlestick_patterns import h1_m5_pattern_gate
 
-MAGIC_MAIN_BUY = 100888
-MAGIC_MAIN_SELL = 100889
-MAGIC_TP3_BUY = 100892
-MAGIC_TP3_SELL = 100893
-MAGIC_TP2_BUY = 100894
-MAGIC_TP2_SELL = 100895
-MAGIC_BREAKOUT_BUY = 100896
-MAGIC_BREAKOUT_SELL = 100897
-MAGIC_BRK_TP2_BUY = 100898
-MAGIC_BRK_TP3_BUY = 100899
+MAGIC_MAIN_BUY = 100988
+MAGIC_MAIN_SELL = 100989
+MAGIC_TP3_BUY = 100992
+MAGIC_TP3_SELL = 100993
+MAGIC_TP2_BUY = 100994
+MAGIC_TP2_SELL = 100995
+MAGIC_BREAKOUT_BUY = 100996
+MAGIC_BREAKOUT_SELL = 100997
+MAGIC_BRK_TP2_BUY = 100998
+MAGIC_BRK_TP3_BUY = 100999
 MAGIC_BRK_TP2_SELL = 100900
 MAGIC_BRK_TP3_SELL = 100901
 MAGIC_REC_BUY = 100902
@@ -221,7 +221,8 @@ def _xau_side_positions(positions, side, exclude_magics=None):
             continue
         if p.type != want:
             continue
-        if int(getattr(p, "magic", 0) or 0) in excl:
+        mag = int(getattr(p, "magic", 0) or 0)
+        if mag not in ALL_ENGINE_MAGICS or mag in excl:
             continue
         out.append(p)
     return out

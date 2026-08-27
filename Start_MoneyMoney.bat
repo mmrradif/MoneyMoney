@@ -1,5 +1,5 @@
 @echo off
-title Money Maker AI Engine
+title MoneyMoney AI Engine
 cls
 echo ========================================================
 echo       💰 MONEY MAKER AI TRADING ENGINE 💰
