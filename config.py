@@ -29,7 +29,7 @@ MAX_TOTAL_LOSS_PERCENT = 50.0    # Emergency Circuit Breaker: Pause & Stop Bot i
 
 # Dual Engine Enable Flags (UI shows ON/OFF from these)
 ENABLE_PENDING_ENGINE = True       # Pending Order Engine
-ENABLE_REGULAR_ENGINE = True       # Regular Order Engine
+ENABLE_REGULAR_ENGINE = False       # Regular Order Engine
 PENDING_MODE = "PMAX_RECOVERY"     # 3-step no-loss: H1 valid stops outside zone + M5 C1/C2 gates
 
 # Lot sizes
@@ -45,7 +45,8 @@ REQUIRE_DUAL_TREND = True
 MAX_RECOVERY_LOT_MULT = 5.0
 BASKET_EQUAL_TOLERANCE = 1.0
 NEUTRALIZE_PROFIT_TOLERANCE = 2.0
-RECOVERY_TARGET_MOVE = 5.0         # ~50 pips on gold — recovery horizon (required)
+RECOVERY_TARGET_MOVE = 2.0
+RECOVERY_TARGET_PIPS = 20.0         # ~50 pips on gold — recovery horizon (required)
 RECOVERY_PROFIT_MULTIPLIER = 1.1    # Default 1.1x target: 100% loss recovery + 10% profit target (configurable from UI)
 RECOVERY_TARGET_ATR_FRAC = 0.35
 RECOVERY_MOVE_FLOOR = 5.0
