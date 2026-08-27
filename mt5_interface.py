@@ -613,6 +613,13 @@ class MT5Interface:
             return False
 
     def modify_pending_tp(self, ticket, new_tp):
+        orders = mt5.orders_get(ticket=ticket)
+        if orders:
+            m = int(getattr(orders[0], "magic", 0) or 0)
+            from smc_recovery import ALL_ENGINE_MAGICS
+            if m not in ALL_ENGINE_MAGICS:
+                return False
+
         """Live-modify Take Profit on an existing pending order (TP3 runner)."""
         orders = mt5.orders_get(ticket=ticket)
         if not orders:
@@ -645,6 +652,13 @@ class MT5Interface:
         return False
 
     def modify_pending_order(self, ticket, price=None, sl=None, tp=None, reason=None):
+        orders = mt5.orders_get(ticket=ticket)
+        if orders:
+            m = int(getattr(orders[0], "magic", 0) or 0)
+            from smc_recovery import ALL_ENGINE_MAGICS
+            if m not in ALL_ENGINE_MAGICS:
+                return False
+
         """Live-modify pending entry / SL / TP (used to keep reverse stop glued to TP3 SL)."""
         orders = mt5.orders_get(ticket=ticket)
         if not orders:
