@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <title>Money Maker AI Engine - Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-page: #F8FAFC;
+            --card-bg: #FFFFFF;
+            --card-border: #E2E8F0;
+            --card-border-hover: #CBD5E1;
+            --accent-blue: #2563EB;
+            --accent-green: #16A34A;
+            --accent-red: #DC2626;
+            --accent-gold: #D97706;
+            --accent-purple: #9333EA;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-page);
+            color: var(--text-main);
+            min-height: 100vh;
+            padding-bottom: 36px;
+            font-size: 13px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #F1F5F9;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #CBD5E1;
+            border-radius: 3px;
+        }
+
+        /* HEADER */
+        header {
+            width: 100%;
+            position: sticky;
+            top: 0;
+            z-index: 999;
+            background: #FFFFFF;
+            border-bottom: 1px solid var(--card-border);
+            padding: 10px 20px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        }
+
+        .header-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .logo-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 800;
+            color: var(--text-main);
+            letter-spacing: -0.2px;
+        }
+
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .rule-badge {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            border: 1px solid transparent;
+        }
+
+        .badge-active {
+            background: #F0FDF4;
+            color: #166534;
+            border-color: #BBF7D0;
+        }
+
+        .badge-danger {
+            background: #FEF2F2;
+            color: #991B1B;
+            border-color: #FECACA;
+        }
+
+        .btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 12px;
+            border: 1px solid transparent;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-green {
+            background: #16A34A;
+            color: white;
+        }
+
+        .btn-green:hover {
+            background: #15803D;
+        }
+
+        .btn-red {
+            background: #DC2626;
+            color: white;
+        }
+
+        .btn-red:hover {
+            background: #B91C1C;
+        }
+
+        /* CONTAINER */
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* METRICS SECTIONS */
+        .metrics-section {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .metrics-row {
+            display: grid;
+            gap: 14px;
+        }
+
+        .metrics-row-4 {
+            grid-template-columns: repeat(4, 1fr);
+        }
+
+        .metrics-row-3 {
+            grid-template-columns: repeat(3, 1fr);
+        }
+
+        @media (max-width: 992px) {
+            .metrics-row-4 {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .metrics-row-3 {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            .metrics-row-4, .metrics-row-3 {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* CLEAN METRIC CARDS - FINE SUBTLE BORDERS */
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            transition: all 0.15s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--card-border-hover);
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.08);
+        }
+
+        .metric-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.4px;
+        }
+
+        .metric-icon-badge {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+        }
+
+        .icon-blue { background: #EFF6FF; color: #2563EB; }
+        .icon-purple { background: #F3E8FF; color: #9333EA; }
+        .icon-gold { background: #FEF3C7; color: #D97706; }
+        .icon-green { background: #ECFDF5; color: #16A34A; }
+        .icon-cyan { background: #E0F2FE; color: #0284C7; }
+
+        .metric-value {
+            font-size: 22px;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: -0.4px;
+            line-height: 1.2;
+            margin: 4px 0;
+            color: var(--text-main);
+        }
+
+        .metric-sub {
+            font-size: 11px;
+            margin-top: 4px;
+            font-weight: 600;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* CARD BOX FOR TABLES AND SETTINGS */
+        .card-box {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 10px;
+            padding: 16px 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+        }
+
+        .box-title {
+            font-size: 13px;
+            font-weight: 700;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--card-border);
+            color: var(--text-main);
+        }
+
+        .input-style {
+            padding: 6px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--card-border);
+            font-size: 12px;
+            font-weight: 700;
+            outline: none;
+            background: #FFFFFF;
+            color: var(--text-main);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .input-style:focus {
+            border-color: var(--accent-blue);
+        }
+
+        /* TABLE */
+        .table-responsive {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+
+        th, td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid var(--card-border);
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 10px;
+            letter-spacing: 0.4px;
+            background: #F8FAFC;
+        }
+
+        tbody tr:hover {
+            background: #F1F5F9;
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- HEADER -->
+    <header>
+        <div class="header-inner">
+            <div class="logo-title">
+                <span>💰</span> MONEY MAKER AI ENGINE
+            </div>
+            <div class="header-controls">
+                <span id="marketStatusBadge" class="rule-badge badge-active">MARKET: OPEN 🟢</span>
+                <span id="botStateBadge" class="rule-badge badge-active">BOT: RUNNING ⚡</span>
+                <button class="btn btn-red" onclick="toggleBot()" id="toggleBtn">Pause Bot</button>
+                <button class="btn btn-red" onclick="shutdownBot()" style="background: #991B1B;">Shutdown Bot 🛑</button>
+            </div>
+        </div>
+    </header>
+
+    <div class="container">
+
+        <!-- CORE METRICS SECTIONS -->
+        <div class="metrics-section">
+            <!-- ROW 1: FINANCIAL OVERVIEW (4 CARDS) -->
+            <div class="metrics-row metrics-row-4">
+                <!-- 1. BALANCE -->
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-label">Account Balance</span>
+                        <div class="metric-icon-badge icon-blue">💵</div>
+                    </div>
+                    <div class="metric-value" id="accBalance">$0.00</div>
+                    <div class="metric-sub" id="accServer" style="color: #16A34A;">MT5 Server: Connected 🟢</div>
+                </div>
+
+                <!-- 2. EQUITY -->
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-label">Account Equity</span>
+                        <div class="metric-icon-badge icon-purple">📈</div>
+                    </div>
+                    <div class="metric-value" id="accEquity" style="color: #2563EB;">$0.00</div>
+                    <div class="metric-sub" id="accDetails">Login: --</div>
+                </div>
+
+                <!-- 3. TOTAL PROFIT / LOSS -->
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-label">Today PnL (Closed)</span>
+                        <div class="metric-icon-badge icon-gold">📊</div>
+                    </div>
+                    <div class="metric-value" id="todayPnl" style="color: #D97706;">$0.00</div>
+                    <div class="metric-sub">Today Net Realized PnL</div>
+                </div>
+
+                <!-- 4. RUNNING TRADES PROFIT / LOSS -->
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-label">Floating PnL</span>
+                        <div class="metric-icon-badge icon-green">🏃</div>
+                    </div>
+                    <div class="metric-value" id="runningPnlVal" style="color: #16A34A;">$0.00</div>
+                    <div class="metric-sub" id="posCountBadge">0 Active Positions</div>
+                </div>
+            </div>
+
+            <!-- ROW 2: ENGINE & MARKET STATUS (3 CARDS) -->
+            <div class="metrics-row metrics-row-3">
+                <!-- 5. BOT RUNNING STATUS -->
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-label">Bot Status</span>
+                        <div class="metric-icon-badge icon-green">⚡</div>
+                    </div>
+                    <div class="metric-value" id="botStatusText" style="color: #16A34A;">RUNNING</div>
+                    <div class="metric-sub" id="botStatusSub">Automated AI Trading Active</div>
+                </div>
+
+                <!-- 6. MARKET STATUS -->
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-label">Market Status</span>
+                        <div class="metric-icon-badge icon-cyan">🌐</div>
+                    </div>
+                    <div class="metric-value" id="marketStatusText" style="color: #16A34A;">OPEN 🟢</div>
+                    <div class="metric-sub" id="marketStatusSub">Market Active</div>
+                </div>
+
+                <!-- 7. RECOVERY STEP & PHASE -->
+                <div class="metric-card">
+                    <div class="metric-header">
+                        <span class="metric-label">Trade Step & Phase</span>
+                        <div class="metric-icon-badge icon-purple">🔄</div>
+                    </div>
+                    <div class="metric-value" id="smcStepDisplay" style="color: #2563EB;">Step 1 (Normal)</div>
+                    <div class="metric-sub" id="smcPhaseSub">Phase: INIT · Normal Trading</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RISK & PROFIT TARGET CONFIGURATION CARD -->
+        <div class="card-box" style="margin-top: 4px;">
+            <div class="box-title">
+                <span>⚙️ Risk, Lot & Profit Target Settings</span>
+                <span style="font-size: 11px; color: var(--text-muted); font-weight: 500;">Live Engine Settings</span>
+            </div>
+            <div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-end;">
+                <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 160px;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">BASE LOT SIZE</label>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <input type="number" id="inputBaseLot" step="0.01" min="0.01" max="10.0" value="0.02" class="input-style" style="width: 90px;">
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">Lot (Default: 0.02)</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 180px;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">PROFIT TARGET MULTIPLIER (RRR)</label>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <input type="number" id="inputProfitMult" step="0.1" min="0.5" max="10.0" value="1.1" class="input-style" style="width: 90px;">
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">x Target (Default: 1.1)</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 220px;">
+                    <label style="font-size: 11px; font-weight: 600; color: var(--text-muted);">FLOATING LOSS SHIELD (%)</label>
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <input type="number" id="inputLossPct" step="1" min="1" max="99" value="80" class="input-style" style="width: 90px;">
+                        <span style="font-size: 11px; color: var(--text-muted); font-weight: 600;">% Balance Loss Cut (Default: 80%)</span>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-green" onclick="saveRiskSettings()">Save Settings</button>
+                    <button class="btn btn-red" onclick="disableLossCap()" style="background: #64748B;">Disable Loss Shield</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- RUNNING TRADES TABLE -->
+        <div class="card-box">
+            <div class="box-title">
+                <span>📊 Active Running Trades</span>
+                <span id="posCountBadgeTitle" style="font-size: 12px; color: var(--text-muted); font-weight: 700;">0 Trades Active</span>
+            </div>
+
+            <div class="table-responsive">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Ticket / Type</th>
+                            <th>Volume</th>
+                            <th>Open Price</th>
+                            <th>Stop Loss</th>
+                            <th>Take Profit</th>
+                            <th>Profit / Loss ($)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="positionsTable">
+                        <tr>
+                            <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 24px;">No running trades currently active.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- HIDDEN CONTAINER FOR BACKEND JS HARMONY -->
+    <div style="display: none;" id="hiddenContainer">
+        <span id="mt5ConnStatusBadge"></span>
+        <span id="regimeStatusBadge"></span>
+        <span id="algoTradingStatus"></span>
+        <span id="pendingHeaderBadge"></span>
+        <span id="regularHeaderBadge"></span>
+        <span id="candleModeBadge"></span>
+        <span id="nextLot"></span>
+        <span id="regularLotSub"></span>
+        <span id="pendingLot"></span>
+        <span id="pendingLotSub"></span>
+        <span id="scoreDisplay"></span>
+        <span id="scoreDisplayHeader"></span>
+        <span id="mandatoryStatus"></span>
+        <span id="m5TrendDisplay"></span>
+        <span id="m5DualSub"></span>
+        <span id="smcStepBig"></span>
+        <span id="smcPhaseVal"></span>
+        <span id="smcOriginVal"></span>
+        <span id="smcPosCounts"></span>
+        <span id="smcStopCounts"></span>
+        <span id="smcBuyStopPx"></span>
+        <span id="smcSellStopPx"></span>
+        <span id="smcZeroLoss"></span>
+        <span id="smcRunnerCover"></span>
+        <span id="smcFlags"></span>
+        <span id="smcPhaseHelp"></span>
+        <span id="badgeProfitCap"></span>
+        <span id="badgeLossShield"></span>
+        <span id="badgeDaily10"></span>
+        <span id="badge9Loss"></span>
+        <span id="badgeRanging"></span>
+        <span id="badgeSmcStep"></span>
+        <span id="badgePmax"></span>
+        <span id="badgeHalfTrend"></span>
+        <span id="badgeCandle"></span>
+        <span id="badgeDualTrend"></span>
+        <span id="pendingEngineBadge"></span>
+        <span id="regularEngineBadge"></span>
+        <button id="btnTogglePending"></button>
+        <button id="btnToggleRegular"></button>
+        <button id="btnFilterWaiting"></button>
+        <button id="btnFilterAll"></button>
+        <button id="btnFilterMatched"></button>
+        <span id="buyScoreBadge"></span>
+        <span id="sellScoreBadge"></span>
+        <span id="buySubtitle"></span>
+        <span id="sellSubtitle"></span>
+        <div id="buyRulesList"></div>
+        <div id="sellRulesList"></div>
+        <div id="checklistMarketNote"></div>
+        <div id="consoleLog"></div>
+        <span id="h1PatternCount"></span>
+        <div id="h1ZonePills"></div>
+        <div id="h1PatternList"></div>
+        <span id="m5PatternCount"></span>
+        <div id="m5ZonePills"></div>
+        <div id="m5PatternList"></div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script>
+        async function fetchStatus() {
+            try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+
+                // 1. Market Status (OPEN / CLOSED)
+                if (data.market_open_status) {
+                    const isMktOpen = !!data.market_open_status.is_open;
+                    const mktBadge = document.getElementById('marketStatusBadge');
+                    const mktText = document.getElementById('marketStatusText');
+                    const mktSub = document.getElementById('marketStatusSub');
+                    if (isMktOpen) {
+                        if (mktBadge) {
+                            mktBadge.innerText = 'MARKET: OPEN 🟢';
+                            mktBadge.className = 'rule-badge badge-active';
+                        }
+                        if (mktText) {
+                            mktText.innerText = 'OPEN 🟢';
+                            mktText.style.color = '#16A34A';
+                        }
+                        if (mktSub) mktSub.innerText = data.market_open_status.msg || 'Trading Active';
+                    } else {
+                        if (mktBadge) {
+                            mktBadge.innerText = 'MARKET: CLOSED 🔴';
+                            mktBadge.className = 'rule-badge badge-danger';
+                        }
+                        if (mktText) {
+                            mktText.innerText = 'CLOSED 🔴';
+                            mktText.style.color = '#DC2626';
+                        }
+                        if (mktSub) mktSub.innerText = data.market_open_status.msg || 'Market Standby / Closed';
+                    }
+                }
+
+                // 2. Account & Balance & Equity
+                if (data.account) {
+                    const bal = data.account.balance || 0;
+                    const eq = data.account.equity || 0;
+                    document.getElementById('accBalance').innerText = '$' + bal.toFixed(2);
+                    document.getElementById('accEquity').innerText = '$' + eq.toFixed(2);
+                    document.getElementById('accServer').innerText = 'MT5 Server: ' + (data.account.server || 'Connected 🟢');
+                    
+                    const accName = data.account.name ? ` (${data.account.name})` : '';
+                    document.getElementById('accDetails').innerText = 'Login: #' + (data.account.login || '--') + accName;
+                }
+
+                // 3. Bot Status (Running vs Paused)
+                const stateBadge = document.getElementById('botStateBadge');
+                const toggleBtn = document.getElementById('toggleBtn');
+                const botStatusText = document.getElementById('botStatusText');
+                const botStatusSub = document.getElementById('botStatusSub');
+
+                if (data.is_running) {
+                    stateBadge.innerText = 'BOT: RUNNING ⚡';
+                    stateBadge.className = 'rule-badge badge-active';
+                    toggleBtn.innerText = 'Pause Bot';
+                    toggleBtn.className = 'btn btn-red';
+                    botStatusText.innerText = 'RUNNING ⚡';
+                    botStatusText.style.color = '#16A34A';
+                    botStatusSub.innerText = 'Automated AI Engine Active';
+                } else {
+                    stateBadge.innerText = 'BOT: PAUSED ⏸️';
+                    stateBadge.className = 'rule-badge badge-danger';
+                    toggleBtn.innerText = 'Start Bot';
+                    toggleBtn.className = 'btn btn-green';
+                    botStatusText.innerText = 'PAUSED ⏸️';
+                    botStatusText.style.color = '#DC2626';
+                    botStatusSub.innerText = 'Bot is currently paused';
+                }
+
+                // 4. Today Net Realized PnL & Risk Rules sync
+                if (data.active_close_rules) {
+                    const todayNet = data.active_close_rules.today_net_pnl || 0;
+                    const pnlEl = document.getElementById('todayPnl');
+                    pnlEl.innerText = (todayNet >= 0 ? '+$' : '-$') + Math.abs(todayNet).toFixed(2);
+                    pnlEl.style.color = todayNet >= 0 ? '#16A34A' : '#DC2626';
+
+                    const baseLotInput = document.getElementById('inputBaseLot');
+                    if (baseLotInput && document.activeElement !== baseLotInput && data.active_close_rules.base_lot) {
+                        baseLotInput.value = data.active_close_rules.base_lot;
+                    }
+
+                    const pmInput = document.getElementById('inputProfitMult');
+                    if (pmInput && document.activeElement !== pmInput && data.active_close_rules.profit_multiplier) {
+                        pmInput.value = data.active_close_rules.profit_multiplier;
+                    }
+                    const lossInput = document.getElementById('inputLossPct');
+                    if (lossInput && document.activeElement !== lossInput) {
+                        if (data.active_close_rules.enable_loss_rule && data.active_close_rules.max_loss_pct) {
+                            lossInput.value = data.active_close_rules.max_loss_pct;
+                        }
+                    }
+                }
+
+                // 5. Running Positions & Floating PnL
+                const posTable = document.getElementById('positionsTable');
+                const posList = data.positions || [];
+                const posBadge = document.getElementById('posCountBadge');
+                const posBadgeTitle = document.getElementById('posCountBadgeTitle');
+
+                const countText = posList.length + (posList.length === 1 ? ' Active Position' : ' Active Positions');
+                posBadge.innerText = countText;
+                posBadgeTitle.innerText = countText;
+
+                let floatingPnlSum = 0;
+                if (posList.length === 0) {
+                    posTable.innerHTML = `<tr><td colspan="6" style="text-align: center; color: var(--text-muted); padding: 20px;">No running trades currently active.</td></tr>`;
+                } else {
+                    posTable.innerHTML = posList.map(p => {
+                        const prof = p.profit || 0;
+                        floatingPnlSum += prof;
+                        const typeColor = p.type === 'BUY' ? '#16A34A' : '#DC2626';
+                        const profColor = prof >= 0 ? '#16A34A' : '#DC2626';
+                        const profText = (prof >= 0 ? '+$' : '-$') + Math.abs(prof).toFixed(2);
+
+                        return `
+                            <tr>
+                                <td><strong>#${p.ticket}</strong> <span style="color:${typeColor}; font-weight:700;">[${p.type}]</span></td>
+                                <td style="font-family: 'JetBrains Mono', monospace; font-weight:600;">${p.volume} Lot</td>
+                                <td style="font-family: 'JetBrains Mono', monospace;">$${Number(p.open_price || p.price_open || 0).toFixed(2)}</td>
+                                <td style="font-family: 'JetBrains Mono', monospace; color:#64748B;">$${Number(p.sl || 0).toFixed(2)}</td>
+                                <td style="font-family: 'JetBrains Mono', monospace; color:#64748B;">$${Number(p.tp || 0).toFixed(2)}</td>
+                                <td style="color:${profColor}; font-weight:700; font-family: 'JetBrains Mono', monospace;">${profText}</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+
+                // Running Trades Floating PnL Card
+                const runningPnlEl = document.getElementById('runningPnlVal');
+                runningPnlEl.innerText = (floatingPnlSum >= 0 ? '+$' : '-$') + Math.abs(floatingPnlSum).toFixed(2);
+                runningPnlEl.style.color = floatingPnlSum >= 0 ? '#16A34A' : '#DC2626';
+
+                // 6. Recovery Step & Phase UI Update (Step 1 = Normal Trade, Step 2+ = Recovery)
+                const smcRec = (data.active_close_rules && data.active_close_rules.smc_recovery) ? data.active_close_rules.smc_recovery : {};
+                const currentStep = smcRec.step || 1;
+                const currentPhase = smcRec.phase || 'INIT';
+                const stepEl = document.getElementById('smcStepDisplay');
+                const phaseEl = document.getElementById('smcPhaseSub');
+                if (stepEl) {
+                    if (currentStep <= 1) {
+                        stepEl.innerText = 'Step 1 (Normal)';
+                        stepEl.style.color = '#2563EB';
+                    } else {
+                        stepEl.innerText = 'Step ' + currentStep + ' (Recovery)';
+                        stepEl.style.color = '#D97706';
+                    }
+                }
+                if (phaseEl) {
+                    if (currentStep <= 1) {
+                        phaseEl.innerText = 'Phase: Normal Signal Entry';
+                    } else {
+                        phaseEl.innerText = 'Recovery Phase: ' + currentPhase + (smcRec.origin ? ` (${smcRec.origin})` : '');
+                    }
+                }
+
+            } catch (err) {
+                // Server is offline / shut down!
+                const stateBadge = document.getElementById('botStateBadge');
+                const botStatusText = document.getElementById('botStatusText');
+                const botStatusSub = document.getElementById('botStatusSub');
+                const mktBadge = document.getElementById('marketStatusBadge');
+                const mktText = document.getElementById('marketStatusText');
+                const mktSub = document.getElementById('marketStatusSub');
+                
+                if (stateBadge) {
+                    stateBadge.innerText = 'BOT: SHUTDOWN 🔴';
+                    stateBadge.className = 'rule-badge badge-danger';
+                }
+                if (botStatusText) {
+                    botStatusText.innerText = 'SHUTDOWN 🔴';
+                    botStatusText.style.color = '#EF4444';
+                }
+                if (botStatusSub) botStatusSub.innerText = 'Engine Process Closed';
+
+                if (mktBadge) {
+                    mktBadge.innerText = 'MARKET: DISCONNECTED 🔴';
+                    mktBadge.className = 'rule-badge badge-danger';
+                }
+                if (mktText) {
+                    mktText.innerText = 'OFFLINE 🔴';
+                    mktText.style.color = '#EF4444';
+                }
+                if (mktSub) mktSub.innerText = 'Engine Not Running';
+            }
+        }
+
+        async function toggleBot() {
+            await fetch('/api/toggle_bot', { method: 'POST' });
+            fetchStatus();
+        }
+
+        let statusPollInterval = setInterval(fetchStatus, 3000);
+
+        async function shutdownBot() {
+            if (confirm("Are you sure you want to COMPLETELY CLOSE and shutdown the Bot Engine?")) {
+                clearInterval(statusPollInterval);
+                
+                // Immediate UI feedback
+                const stateBadge = document.getElementById('botStateBadge');
+                const botStatusText = document.getElementById('botStatusText');
+                const botStatusSub = document.getElementById('botStatusSub');
+                
+                if (stateBadge) {
+                    stateBadge.innerText = 'BOT: SHUTDOWN 🔴';
+                    stateBadge.className = 'rule-badge badge-danger';
+                }
+                if (botStatusText) {
+                    botStatusText.innerText = 'SHUTDOWN 🔴';
+                    botStatusText.style.color = '#EF4444';
+                }
+                if (botStatusSub) botStatusSub.innerText = 'Process Terminated';
+
+                try {
+                    await fetch('/api/shutdown', { method: 'POST' });
+                } catch (e) {}
+                alert("🛑 Bot Engine process has been completely shut down.");
+            }
+        }
+
+        async function saveRiskSettings() {
+            const baseLot = parseFloat(document.getElementById('inputBaseLot').value) || 0.02;
+            const mult = parseFloat(document.getElementById('inputProfitMult').value) || 1.1;
+            const lossPct = parseFloat(document.getElementById('inputLossPct').value) || 80;
+
+            try {
+                const res = await fetch('/api/config/close_rules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        base_lot: baseLot,
+                        profit_multiplier: mult,
+                        enable_loss_rule: true,
+                        max_loss_pct: lossPct
+                    })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert(`✅ Settings Saved!\nBase Lot Size: ${baseLot}\nProfit Target Multiplier: ${mult}x\nFloating Loss Cut: ${lossPct}%`);
+                } else {
+                    alert("❌ Error: " + (data.message || "Failed to update settings"));
+                }
+            } catch (err) {
+                alert("❌ Connection error while saving settings.");
+            }
+            fetchStatus();
+        }
+
+        async function disableLossCap() {
+            try {
+                const res = await fetch('/api/config/close_rules', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        enable_loss_rule: false,
+                        max_loss_pct: 0
+                    })
+                });
+                alert("⚠️ Floating Loss Shield has been DISABLED.");
+            } catch (err) {}
+            fetchStatus();
+        }
+
+        fetchStatus();
+    </script>
+
+
+</body>
+
+</html>

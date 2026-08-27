@@ -1,0 +1,42 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Logs & runtime
+*.log
+bot.log
+trade_tracker.json
+user_settings.json
+
+# Secrets / local overrides
+.env
+.env.*
+*.pem
+credentials.json
+config_local.py
+
+# IDE / OS
+.vscode/
+.idea/
+.cursor/
+*.swp
+Thumbs.db
+Desktop.ini
+
+# Scratch / backups
+scratch/
+config_backup.py
+*.bak
+*.tmp
+# Build output & logs
+dist/
+build/
+dist_build/
+logs/
+*.exe
+
